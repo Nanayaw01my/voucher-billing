@@ -1,6 +1,6 @@
 import type { Types } from 'mongoose';
 import { ImportBatch, Voucher, PackageModel, type IImportRejection, type IStagedVoucher } from '../models';
-import { parseMikrotikUserCommand } from './parser/mikrotikCommandParser';
+import { parseMikrotikUserCommand, isPathLine, joinContinuations } from './parser/mikrotikCommandParser';
 import { parseCsv, parseJson } from './parser/tabularParser';
 import { encryptSecret } from '../utils/crypto';
 import { env } from '../config/env';
@@ -92,12 +92,18 @@ export async function previewImport(input: PreviewInput): Promise<ImportPreview>
   };
 
   if (format === 'TXT') {
-    const lines = input.content.split(/\r?\n/);
-    lines.forEach((raw, index) => {
-      const trimmed = raw.trim();
-      if (!trimmed || trimmed.startsWith('#')) return; // blank lines are not rows
-      consider(parseMikrotikUserCommand(trimmed), trimmed, index + 1);
-    });
+    // Handles both standalone commands and a RouterOS script export, which
+    // uses a bare path line followed by `add ...` lines and may wrap long
+    // lines with a trailing backslash.
+    let pathContext: string | undefined;
+    for (const { text, line } of joinContinuations(input.content.split(/\r?\n/))) {
+      if (!text || text.startsWith('#')) continue; // blank and comment lines are not rows
+      if (isPathLine(text)) {
+        pathContext = text.toLowerCase();
+        continue; // a path line is context, not a voucher
+      }
+      consider(parseMikrotikUserCommand(text, pathContext), text, line);
+    }
   } else {
     const parsed = format === 'CSV'
       ? parseCsv(input.content, { ...(defaultProfile ? { profile: defaultProfile } : {}) })

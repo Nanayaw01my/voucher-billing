@@ -13,6 +13,14 @@ import { parseRouterOsDuration, parseDataSize } from '../../utils/format';
 /** The single command form this importer accepts. Anything else is rejected. */
 const ALLOWED_COMMAND = '/ip hotspot user add';
 
+/**
+ * `/ip hotspot user export` writes a script rather than standalone commands:
+ * a bare path line, then `add ...` lines beneath it. Both shapes are accepted,
+ * but only for this one path -- a script that switches to any other path stops
+ * being importable at that point.
+ */
+const ALLOWED_PATH = '/ip hotspot user';
+
 const ALLOWED_PROPERTIES = new Set([
   'name',
   'password',
@@ -83,9 +91,57 @@ export function tokenize(line: string): string[] {
   return tokens;
 }
 
-export function parseMikrotikUserCommand(line: string): ParseResult {
+/** True when a line is a bare RouterOS path that sets the context for `add`. */
+export function isPathLine(line: string): boolean {
   const trimmed = line.trim();
+  return trimmed.startsWith('/') && !trimmed.includes('=');
+}
+
+/**
+ * Joins RouterOS line continuations. An export wraps long lines with a trailing
+ * backslash, so a single voucher can arrive split across several lines.
+ * Returns the logical lines with the line number each one started on.
+ */
+export function joinContinuations(rawLines: string[]): Array<{ text: string; line: number }> {
+  const out: Array<{ text: string; line: number }> = [];
+  let buffer = '';
+  let startedAt = 0;
+
+  rawLines.forEach((raw, index) => {
+    const trimmed = raw.trim();
+    if (buffer === '') startedAt = index + 1;
+    if (trimmed.endsWith('\\')) {
+      buffer += `${trimmed.slice(0, -1).trim()} `;
+      return;
+    }
+    out.push({ text: (buffer + trimmed).trim(), line: startedAt });
+    buffer = '';
+  });
+
+  if (buffer) out.push({ text: buffer.trim(), line: startedAt });
+  return out;
+}
+
+/**
+ * `pathContext` is the path most recently seen in a script. A bare `add ...`
+ * line is only accepted while that context is the hotspot user path.
+ */
+export function parseMikrotikUserCommand(line: string, pathContext?: string): ParseResult {
+  let trimmed = line.trim();
   if (!trimmed || trimmed.startsWith('#')) return { ok: false, reason: 'blank or comment line' };
+
+  // A script's `add ...` line inherits the path above it.
+  if (/^add\s/i.test(trimmed)) {
+    if (pathContext !== ALLOWED_PATH) {
+      return {
+        ok: false,
+        reason: pathContext
+          ? `"add" under "${pathContext}" is not allowed by the importer`
+          : '"add" has no "/ip hotspot user" line above it',
+      };
+    }
+    trimmed = `${ALLOWED_PATH} ${trimmed}`;
+  }
 
   let tokens: string[];
   try {
