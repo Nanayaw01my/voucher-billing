@@ -29,7 +29,9 @@ async function seed(): Promise<void> {
 
   const existing = await User.findOne({ username: env.seedAdminUsername.toLowerCase() });
   if (existing) {
-    logger.info('Bootstrap administrator already exists, leaving it untouched');
+    logger.info('Bootstrap administrator already exists, leaving it untouched', {
+      username: existing.username,
+    });
   } else {
     await User.create({
       name: 'Administrator',
@@ -39,8 +41,10 @@ async function seed(): Promise<void> {
       locationId: location._id,
       status: 'ACTIVE',
     });
+    // Log the stored form: usernames are lowercased by the schema, so what was
+    // configured and what you sign in as are not always spelled the same.
     logger.info('Bootstrap administrator created -- change this password at first login', {
-      username: env.seedAdminUsername,
+      username: env.seedAdminUsername.toLowerCase(),
     });
   }
 
