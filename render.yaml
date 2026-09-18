@@ -1,0 +1,49 @@
+# Render blueprint: one web service hosting both the API and the interface.
+#
+# Set the four `sync: false` variables in the Render dashboard before the first
+# deploy. ROUTER_SECRET_KEY and VOUCHER_SECRET_KEY must be 64 hex characters
+# (openssl rand -hex 32) and must never change afterwards -- every router and
+# voucher password already stored is encrypted under them.
+services:
+  - type: web
+    name: voucher-billing
+    runtime: node
+    plan: starter
+    # --include=dev is required: NODE_ENV=production is set during the build
+    # too, and npm would otherwise skip typescript and vite, which are
+    # devDependencies, leaving the build with "tsc: not found".
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node server/dist/index.js
+    # Liveness, not readiness: a brief database blip should not trigger a redeploy.
+    healthCheckPath: /health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      # The MikroTik sync worker only runs while an instance is running. On a
+      # plan that spins down when idle, session history has gaps.
+      - key: SYNC_ENABLED
+        value: "true"
+      - key: SYNC_INTERVAL_MS
+        value: "60000"
+      # Starlink adds latency and the link can drop; be patient with the router.
+      - key: ROUTER_TIMEOUT_MS
+        value: "12000"
+
+      # Your MongoDB Atlas connection string, including the database name.
+      - key: MONGODB_URI
+        sync: false
+      # Rotating this only signs everyone out, so Render may generate it.
+      - key: JWT_SECRET
+        generateValue: true
+      # Must be 64 hex characters. Set once, then never change.
+      - key: ROUTER_SECRET_KEY
+        sync: false
+      - key: VOUCHER_SECRET_KEY
+        sync: false
+      # First administrator, created by the one-off seed command.
+      - key: SEED_ADMIN_USERNAME
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
