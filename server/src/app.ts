@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { type Request } from 'express';
 import helmet from 'helmet';
-import cors from 'cors';
+import cors, { type CorsOptionsDelegate } from 'cors';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
@@ -15,15 +15,6 @@ export function createApp(): express.Express {
 
   app.set('trust proxy', 1);
   app.use(helmet());
-  app.use(
-    cors({
-      origin: (origin, cb) => {
-        if (!origin || env.corsOrigin.includes(origin)) return cb(null, true);
-        cb(new Error('Origin not allowed'));
-      },
-      credentials: true,
-    }),
-  );
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(sanitizeMongo);
@@ -49,7 +40,10 @@ export function createApp(): express.Express {
     });
   });
 
-  app.use('/api', apiLimiter, api);
+  // CORS applies only to the API. Static assets are same-origin, and Vite marks
+  // its bundles `crossorigin`, so the browser sends an Origin header for them
+  // too -- running them through a CORS check only creates failures.
+  app.use('/api', cors(corsDelegate), apiLimiter, api);
   // An unmatched /api path must stay JSON, never fall through to the SPA shell.
   app.use('/api', notFoundHandler);
 
@@ -60,6 +54,30 @@ export function createApp(): express.Express {
 
   return app;
 }
+
+/**
+ * Same-origin callers and non-browser clients need no CORS headers at all.
+ * A cross-origin caller is allowed only if CORS_ORIGIN lists it. An origin that
+ * is not allowed is declined rather than thrown on: throwing turns a routine
+ * CORS decision into a 500 with a stack trace, when the correct outcome is to
+ * omit the headers and let the browser enforce it.
+ */
+const corsDelegate: CorsOptionsDelegate<Request> = (req, callback) => {
+  const origin = req.headers.origin;
+  if (!origin) return callback(null, { origin: false });
+
+  let sameOrigin = false;
+  try {
+    sameOrigin = new URL(origin).host === req.headers.host;
+  } catch {
+    sameOrigin = false; // malformed Origin header
+  }
+
+  if (sameOrigin || env.corsOrigin.includes(origin)) {
+    return callback(null, { origin, credentials: true });
+  }
+  callback(null, { origin: false });
+};
 
 /**
  * Serves the built frontend when it is present, so one deployment can host both
