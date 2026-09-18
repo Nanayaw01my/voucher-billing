@@ -59,6 +59,14 @@ api.post(
 api.post('/vouchers/import/:batchId/confirm', requireAdmin, asyncHandler(vouchers.importConfirmHandler));
 api.post('/vouchers/import/:batchId/cancel', requireAdmin, asyncHandler(vouchers.importCancelHandler));
 api.get('/import-batches', requireAdmin, validate(paginationSchema, 'query'), asyncHandler(vouchers.listImportBatches));
+// Registered before /vouchers/:id so "bulk-delete" is not read as an id.
+api.post(
+  '/vouchers/bulk-delete',
+  requireSuperAdmin,
+  heavyLimiter,
+  validate(vouchers.bulkDeleteSchema),
+  asyncHandler(vouchers.bulkDeleteVouchers),
+);
 api.get('/vouchers/:id', validate(idParam, 'params'), asyncHandler(vouchers.getVoucher));
 api.get('/vouchers/:id/secret', requireAdmin, asyncHandler(vouchers.revealVoucherSecret));
 api.get('/vouchers/:id/sessions', validate(paginationSchema, 'query'), asyncHandler(vouchers.getVoucherSessions));

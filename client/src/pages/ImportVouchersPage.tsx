@@ -3,11 +3,15 @@ import { api } from '../api/endpoints';
 import { useAsync, useSubmit } from '../hooks/useApi';
 import { PageHeader, Panel, Field, ErrorNotice, Notice, TableWrap, Empty, Stat } from '../components/ui';
 import { formatDateTime } from '../lib/format';
-import type { ImportPreview } from '../api/types';
+import type { ImportPreview, ImportBatchRecord } from '../api/types';
+import { ConfirmDelete } from '../components/ConfirmDelete';
+import { useAuth } from '../hooks/useAuth';
 
 const EXAMPLE = '/ip hotspot user add name=D4BKB3UD password=D4BKB3UD profile="VOUCHER-24H-1CODE" limit-uptime=24h';
 
 export function ImportVouchersPage() {
+  const { can } = useAuth();
+  const [deleting, setDeleting] = useState<ImportBatchRecord | null>(null);
   const packages = useAsync(() => api.packages.list(), []);
   const routers = useAsync(() => api.routers.list(), []);
   const locations = useAsync(() => api.locations.list(), []);
@@ -19,6 +23,7 @@ export function ImportVouchersPage() {
   const [locationId, setLocationId] = useState('');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [done, setDone] = useState<{ reference: string; imported: number; skipped: number } | null>(null);
+  const [purgeResult, setPurgeResult] = useState<string | null>(null);
 
   const upload = useSubmit(async () => {
     if (!file) return null;
@@ -41,6 +46,20 @@ export function ImportVouchersPage() {
     return result;
   });
 
+  const purge = useSubmit(async (batch: ImportBatchRecord, alsoRemoveFromRouter: boolean) => {
+    const result = await api.vouchers.bulkDelete({ importBatchId: batch._id, alsoRemoveFromRouter });
+    setDeleting(null);
+    setDone(null);
+    batches.reload();
+    setPurgeResult(
+      `Batch ${batch.reference}: ${result.deleted.toLocaleString()} voucher(s) deleted` +
+        (result.skippedSold ? `, ${result.skippedSold} kept because they were already sold` : '') +
+        (result.routerRemoved ? `, ${result.routerRemoved} removed from the router` : '') +
+        (result.routerFailures.length ? `. ${result.routerFailures.length} router removal(s) failed.` : '.'),
+    );
+    return result;
+  });
+
   const cancel = useSubmit(async (batchId: string) => {
     await api.vouchers.importCancel(batchId);
     setPreview(null);
@@ -53,7 +72,13 @@ export function ImportVouchersPage() {
         title="Import vouchers"
         description="Upload existing stock as MikroTik commands, CSV or JSON. Nothing is written until you confirm the preview."
       />
-      <ErrorNotice message={upload.error ?? confirm.error ?? cancel.error} />
+      <ErrorNotice message={upload.error ?? confirm.error ?? cancel.error ?? purge.error} />
+
+      {purgeResult && (
+        <div className="mb-4">
+          <Notice kind="warn">{purgeResult}</Notice>
+        </div>
+      )}
 
       {done && (
         <div className="mb-4">
@@ -202,6 +227,7 @@ export function ImportVouchersPage() {
                     <th className="th">Batch</th><th className="th">File</th><th className="th">Status</th>
                     <th className="th">Found</th><th className="th">Imported</th><th className="th">Duplicates</th>
                     <th className="th">Invalid</th><th className="th">By</th><th className="th">Date</th>
+                    <th className="th"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -216,6 +242,13 @@ export function ImportVouchersPage() {
                       <td className="td tabular-nums">{batch.invalidCount}</td>
                       <td className="td text-muted">{batch.createdBy?.name ?? '—'}</td>
                       <td className="td text-muted">{formatDateTime(batch.createdAt)}</td>
+                      <td className="td">
+                        {can('SUPER_ADMIN') && batch.status === 'COMPLETED' && batch.importedCount > 0 && (
+                          <button className="btn-quiet px-2 py-1 text-xs" onClick={() => setDeleting(batch)}>
+                            Delete vouchers
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -224,6 +257,18 @@ export function ImportVouchersPage() {
           )}
         </Panel>
       </div>
+      {deleting && (
+        <ConfirmDelete
+          title={`Delete vouchers from ${deleting.reference}`}
+          summary={`This removes the ${deleting.importedCount.toLocaleString()} voucher(s) that batch ${deleting.reference} created from "${deleting.filename}". The batch record itself is kept, so the import history stays intact.`}
+          count={deleting.importedCount}
+          confirmWord={deleting.reference}
+          busy={purge.busy}
+          error={purge.error}
+          onCancel={() => setDeleting(null)}
+          onConfirm={(alsoRemoveFromRouter) => void purge.run(deleting, alsoRemoveFromRouter)}
+        />
+      )}
     </>
   );
 }

@@ -25,6 +25,13 @@ export const api = {
       ),
     disable: (id: string) => request<unknown>(`/vouchers/${id}/disable`, { method: 'POST' }),
     remove: (id: string) => request<unknown>(`/vouchers/${id}`, { method: 'DELETE' }),
+    bulkDelete: (body: { ids?: string[]; importBatchId?: string; alsoRemoveFromRouter: boolean }) =>
+      request<{
+        deleted: number;
+        skippedSold: number;
+        routerRemoved: number;
+        routerFailures: Array<{ code: string; reason: string }>;
+      }>('/vouchers/bulk-delete', { method: 'POST', body }),
     print: (ids: string[]) =>
       request<{ cards: Array<{ code: string; username: string; password: string; packageName: string; price: number | null; currency: string }> }>(
         '/vouchers/print', { method: 'POST', body: { ids } },

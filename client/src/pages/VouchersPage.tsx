@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/endpoints';
 import { useAsync, useSubmit } from '../hooks/useApi';
 import { useAuth } from '../hooks/useAuth';
-import { PageHeader, Panel, TableWrap, Pager, Loading, Empty, ErrorNotice, StatusChip, Field } from '../components/ui';
+import { PageHeader, Panel, TableWrap, Pager, Loading, Empty, ErrorNotice, StatusChip, Field, Notice } from '../components/ui';
 import { formatDate, formatBytes, nameOf } from '../lib/format';
 import type { VoucherStatus } from '../api/types';
+import { ConfirmDelete } from '../components/ConfirmDelete';
 
 const STATUSES: VoucherStatus[] = ['AVAILABLE', 'ACTIVE', 'EXPIRED', 'USED', 'DISABLED'];
 
@@ -17,6 +18,8 @@ export function VouchersPage() {
   const [packageId, setPackageId] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<string | null>(null);
 
   const packages = useAsync(() => api.packages.list(), []);
   const query = useMemo(
@@ -28,6 +31,19 @@ export function VouchersPage() {
   const disable = useSubmit(async (id: string) => {
     await api.vouchers.disable(id);
     vouchers.reload();
+  });
+
+  const bulkDelete = useSubmit(async (alsoRemoveFromRouter: boolean) => {
+    const result = await api.vouchers.bulkDelete({ ids: selected, alsoRemoveFromRouter });
+    setConfirmingDelete(false);
+    setSelected([]);
+    vouchers.reload();
+    setDeleteResult(
+      `${result.deleted.toLocaleString()} voucher(s) deleted` +
+        (result.skippedSold ? `, ${result.skippedSold} kept because they were already sold` : '') +
+        (result.routerFailures.length ? `. ${result.routerFailures.length} router removal(s) failed.` : '.'),
+    );
+    return result;
   });
 
   const toggle = (id: string) =>
@@ -47,6 +63,11 @@ export function VouchersPage() {
                 onClick={() => navigate(`/vouchers/print?ids=${selected.join(',')}`)}
               >
                 Print {selected.length} card{selected.length === 1 ? '' : 's'}
+              </button>
+            )}
+            {can('SUPER_ADMIN') && selected.length > 0 && (
+              <button className="btn-quiet" onClick={() => setConfirmingDelete(true)}>
+                Delete {selected.length}
               </button>
             )}
             {can('SUPER_ADMIN', 'ADMIN') && <Link className="btn-primary" to="/vouchers/generate">Generate</Link>}
@@ -75,7 +96,13 @@ export function VouchersPage() {
         </Field>
       </div>
 
-      <ErrorNotice message={vouchers.error ?? disable.error} />
+      <ErrorNotice message={vouchers.error ?? disable.error ?? bulkDelete.error} />
+
+      {deleteResult && (
+        <div className="mb-4">
+          <Notice kind="warn">{deleteResult}</Notice>
+        </div>
+      )}
 
       <Panel>
         {vouchers.loading && !vouchers.data ? (
@@ -143,6 +170,19 @@ export function VouchersPage() {
           </>
         )}
       </Panel>
+
+      {confirmingDelete && (
+        <ConfirmDelete
+          title={`Delete ${selected.length} selected voucher${selected.length === 1 ? '' : 's'}`}
+          summary="Only the vouchers you ticked are affected. Anything already sold is kept."
+          count={selected.length}
+          confirmWord="DELETE"
+          busy={bulkDelete.busy}
+          error={bulkDelete.error}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={(alsoRemoveFromRouter) => void bulkDelete.run(alsoRemoveFromRouter)}
+        />
+      )}
     </>
   );
 }

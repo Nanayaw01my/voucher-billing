@@ -234,6 +234,76 @@ test('audit entries are written for the actions that matter', async (t) => {
   assert.ok(!JSON.stringify(response.body).toLowerCase().includes('superSecret123'.toLowerCase()));
 });
 
+test('bulk delete clears an import batch but keeps sold vouchers', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const { Voucher, ImportBatch } = await import('../models');
+
+  // A fresh batch of three, one of which then gets sold.
+  const file = ['ZZ110011', 'ZZ220022', 'ZZ330033']
+    .map((code) => `/ip hotspot user add name=${code} password=${code} profile="VOUCHER-24H-1CODE" limit-uptime=24h`)
+    .join('\n');
+
+  const preview = await request(app, 'POST', '/api/vouchers/import/preview', {
+    token, file: { field: 'file', filename: 'purge.txt', content: file },
+  });
+  await request(app, 'POST', `/api/vouchers/import/${preview.body.batchId}/confirm`, { token });
+
+  const batch = await ImportBatch.findById(preview.body.batchId);
+  const created = await Voucher.find({ importBatchId: batch!._id }).lean();
+  assert.equal(created.length, 3);
+
+  const sale = await request(app, 'POST', '/api/sales', {
+    token, body: { voucherId: String(created[0]!._id), price: 10, paymentMethod: 'CASH' },
+  });
+  assert.equal(sale.status, 201);
+
+  const purge = await request(app, 'POST', '/api/vouchers/bulk-delete', {
+    token, body: { importBatchId: String(batch!._id), alsoRemoveFromRouter: false },
+  });
+
+  assert.equal(purge.status, 200);
+  assert.equal(purge.body.deleted, 2, 'the two unsold vouchers are deleted');
+  assert.equal(purge.body.skippedSold, 1, 'the sold voucher is kept');
+  assert.equal(await Voucher.countDocuments({ importBatchId: batch!._id }), 1);
+
+  // The batch record itself survives, so import history stays intact.
+  assert.ok(await ImportBatch.findById(batch!._id));
+});
+
+test('bulk delete needs either ids or a batch, and refuses a non-super-admin', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+
+  const empty = await request(app, 'POST', '/api/vouchers/bulk-delete', { token, body: {} });
+  assert.equal(empty.status, 400);
+
+  const login = await request(app, 'POST', '/api/auth/login', {
+    body: { username: 'kofi', password: 'SellerPass123' },
+  });
+  const sellerToken = login.body.token;
+  const refused = await request(app, 'POST', '/api/vouchers/bulk-delete', {
+    token: sellerToken, body: { ids: ['000000000000000000000000'], alsoRemoveFromRouter: false },
+  });
+  assert.equal(refused.status, 403);
+});
+
+test('bulk delete does not touch the router unless asked', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const { Voucher } = await import('../models');
+
+  const voucher = await Voucher.create({
+    code: 'NOROUTER1', username: 'NOROUTER1', encryptedPassword: 'v1:00:00:00',
+    profileName: 'VOUCHER-24H-1CODE', status: 'AVAILABLE', pushedToRouter: true,
+  });
+
+  // No routerId is set, so nothing can be attempted; the record still clears.
+  const purge = await request(app, 'POST', '/api/vouchers/bulk-delete', {
+    token, body: { ids: [String(voucher._id)], alsoRemoveFromRouter: false },
+  });
+  assert.equal(purge.body.deleted, 1);
+  assert.equal(purge.body.routerRemoved, 0);
+  assert.equal(purge.body.routerFailures.length, 0);
+});
+
 test('an unknown route returns a readable message, not a stack trace', async (t) => {
   if (skipIfNoDatabase(t)) return;
   const response = await request(app, 'GET', '/api/nope', { token });

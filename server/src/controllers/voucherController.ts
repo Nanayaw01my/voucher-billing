@@ -259,6 +259,88 @@ export async function deleteVoucher(req: Request, res: Response): Promise<void> 
   res.json({ ok: true });
 }
 
+export const bulkDeleteSchema = z
+  .object({
+    ids: z.array(objectId).min(1).max(20_000).optional(),
+    importBatchId: objectId.optional(),
+    /**
+     * Imported vouchers already exist on the router -- that is where they came
+     * from -- so removing them here must not cut off paying customers by
+     * default. Deleting the hotspot users too is a deliberate, separate choice.
+     */
+    alsoRemoveFromRouter: z.boolean().default(false),
+  })
+  .refine((v) => v.ids?.length || v.importBatchId, {
+    message: 'Choose vouchers to delete, or an import batch to clear',
+    path: ['ids'],
+  });
+
+/**
+ * Deletes many vouchers at once. Sold vouchers are never deleted -- they are
+ * the record behind a sale -- so they are reported as skipped instead.
+ */
+export async function bulkDeleteVouchers(req: Request, res: Response): Promise<void> {
+  const body = req.body as z.infer<typeof bulkDeleteSchema>;
+
+  const filter: Record<string, unknown> = {};
+  if (body.importBatchId) filter.importBatchId = body.importBatchId;
+  if (body.ids?.length) filter._id = { $in: body.ids };
+
+  const matched = await Voucher.find(filter).select('code username routerId saleId').lean();
+  if (matched.length === 0) {
+    res.json({ deleted: 0, skippedSold: 0, routerRemoved: 0, routerFailures: [], message: 'Nothing matched.' });
+    return;
+  }
+
+  const deletable = matched.filter((voucher) => !voucher.saleId);
+  const skippedSold = matched.length - deletable.length;
+
+  // Best effort, and only when explicitly asked: a router that cannot be
+  // reached must not stop the records being cleared.
+  const routerFailures: Array<{ code: string; reason: string }> = [];
+  let routerRemoved = 0;
+  if (body.alsoRemoveFromRouter) {
+    const byRouter = new Map<string, typeof deletable>();
+    for (const voucher of deletable) {
+      if (!voucher.routerId) continue;
+      const key = String(voucher.routerId);
+      byRouter.set(key, [...(byRouter.get(key) ?? []), voucher]);
+    }
+    for (const [routerId, vouchers] of byRouter) {
+      const outcome = await routerPool.tryWith(routerId, async (service) => {
+        for (const voucher of vouchers) {
+          try {
+            await service.removeHotspotUser(voucher.username);
+            routerRemoved += 1;
+          } catch (err) {
+            routerFailures.push({ code: voucher.code, reason: err instanceof Error ? err.message : 'unknown error' });
+          }
+        }
+      });
+      if (!outcome.ok) {
+        for (const voucher of vouchers) routerFailures.push({ code: voucher.code, reason: outcome.reason });
+      }
+    }
+  }
+
+  const result = await Voucher.deleteMany({ _id: { $in: deletable.map((v) => v._id) } });
+
+  await recordAudit(actorFrom(req), 'VOUCHER_DELETED', 'Voucher', body.importBatchId, {
+    deleted: result.deletedCount,
+    skippedSold,
+    importBatchId: body.importBatchId,
+    removedFromRouter: body.alsoRemoveFromRouter ? routerRemoved : 'not requested',
+  });
+
+  res.json({
+    deleted: result.deletedCount ?? 0,
+    skippedSold,
+    routerRemoved,
+    // Only the first few: a long list is noise, and the count is what matters.
+    routerFailures: routerFailures.slice(0, 20),
+  });
+}
+
 export async function getVoucherSessions(req: Request, res: Response): Promise<void> {
   const query = queryOf<z.infer<typeof paginationSchema>>(req);
   const filter = { voucherId: req.params.id };
