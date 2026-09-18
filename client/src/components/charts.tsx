@@ -1,8 +1,17 @@
 /**
- * Charts drawn as inline SVG in black on white. No chart library and no palette:
- * series are distinguished by fill, hatch and stroke dash rather than colour,
- * which keeps them legible in print and on a monochrome screen.
+ * Charts drawn as inline SVG on a white surface, in a single validated blue.
+ *
+ * Every chart here is single-series, so no categorical palette is involved and
+ * no legend is needed -- the panel title names the measure. SERIES is the data
+ * mark colour (4.42:1 on white, comfortably over the 3:1 a mark needs); axis
+ * and value text stays in the muted ink token rather than the series colour.
  */
+
+/** Data marks only. Text and UI use the darker `brand` blue, which clears AA. */
+const SERIES = '#2a78d6';
+const GRID = '#e3e8ef';
+const AXIS = '#0f172a';
+const TEXT_MUTED = '#5b6472';
 
 interface Point { label: string; value: number }
 
@@ -29,8 +38,8 @@ export function BarChart({ data, height = 180, valueFormat }: { data: Point[]; h
         const y = padding.top + plotHeight * (1 - fraction);
         return (
           <g key={fraction}>
-            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e5e5e5" strokeWidth="1" />
-            <text x={padding.left - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#6b6b6b">
+            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke={GRID} strokeWidth="1" />
+            <text x={padding.left - 6} y={y + 3} textAnchor="end" fontSize="9" fill={TEXT_MUTED}>
               {valueFormat ? valueFormat(max * fraction) : Math.round(max * fraction)}
             </text>
           </g>
@@ -41,16 +50,16 @@ export function BarChart({ data, height = 180, valueFormat }: { data: Point[]; h
         const x = padding.left + slot * index + (slot - barWidth) / 2;
         return (
           <g key={point.label}>
-            <rect x={x} y={padding.top + plotHeight - barHeight} width={barWidth} height={barHeight} fill="#000" />
+            <rect x={x} y={padding.top + plotHeight - barHeight} width={barWidth} height={barHeight} fill={SERIES} rx="2" />
             {(data.length <= 12 || index % Math.ceil(data.length / 8) === 0) && (
-              <text x={x + barWidth / 2} y={height - 8} textAnchor="middle" fontSize="9" fill="#6b6b6b">
+              <text x={x + barWidth / 2} y={height - 8} textAnchor="middle" fontSize="9" fill={TEXT_MUTED}>
                 {point.label}
               </text>
             )}
           </g>
         );
       })}
-      <line x1={padding.left} x2={width - padding.right} y1={padding.top + plotHeight} y2={padding.top + plotHeight} stroke="#000" strokeWidth="1" />
+      <line x1={padding.left} x2={width - padding.right} y1={padding.top + plotHeight} y2={padding.top + plotHeight} stroke={AXIS} strokeWidth="1" />
     </svg>
   );
 }
@@ -77,30 +86,30 @@ export function LineChart({ data, height = 180, valueFormat }: { data: Point[]; 
       <defs>
         {/* A hatch stands in for a fill tint, so the chart stays purely black and white. */}
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="6" stroke="#000" strokeWidth="1" opacity="0.18" />
+          <line x1="0" y1="0" x2="0" y2="6" stroke={SERIES} strokeWidth="1" opacity="0.22" />
         </pattern>
       </defs>
       {[0, 0.5, 1].map((fraction) => {
         const y = padding.top + plotHeight * (1 - fraction);
         return (
           <g key={fraction}>
-            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e5e5e5" strokeWidth="1" />
-            <text x={padding.left - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#6b6b6b">
+            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke={GRID} strokeWidth="1" />
+            <text x={padding.left - 6} y={y + 3} textAnchor="end" fontSize="9" fill={TEXT_MUTED}>
               {valueFormat ? valueFormat(max * fraction) : Math.round(max * fraction)}
             </text>
           </g>
         );
       })}
       <path d={area} fill="url(#hatch)" />
-      <path d={path} fill="none" stroke="#000" strokeWidth="1.75" />
+      <path d={path} fill="none" stroke={SERIES} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {data.map((point, index) => (
         (data.length <= 12 || index % Math.ceil(data.length / 8) === 0) && (
-          <text key={point.label} x={coords[index]!.x} y={height - 8} textAnchor="middle" fontSize="9" fill="#6b6b6b">
+          <text key={point.label} x={coords[index]!.x} y={height - 8} textAnchor="middle" fontSize="9" fill={TEXT_MUTED}>
             {point.label}
           </text>
         )
       ))}
-      <line x1={padding.left} x2={width - padding.right} y1={padding.top + plotHeight} y2={padding.top + plotHeight} stroke="#000" strokeWidth="1" />
+      <line x1={padding.left} x2={width - padding.right} y1={padding.top + plotHeight} y2={padding.top + plotHeight} stroke={AXIS} strokeWidth="1" />
     </svg>
   );
 }
@@ -117,8 +126,11 @@ export function RankedBars({ data, format }: { data: Point[]; format?: (v: numbe
             <span className="truncate">{point.label}</span>
             <span className="tabular-nums font-medium">{format ? format(point.value) : point.value.toLocaleString()}</span>
           </div>
-          <div className="mt-2 h-2 w-full border border-hairline">
-            <div className="h-full bg-ink" style={{ width: `${Math.max(2, (point.value / max) * 100)}%` }} />
+          <div className="mt-2 h-2 w-full rounded-sm bg-wash">
+            <div
+              className="h-full rounded-sm bg-series"
+              style={{ width: `${Math.max(2, (point.value / max) * 100)}%` }}
+            />
           </div>
         </li>
       ))}

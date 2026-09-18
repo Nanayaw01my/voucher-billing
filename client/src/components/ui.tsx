@@ -16,7 +16,7 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
   return (
     <div className="card p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-2 text-2xl font-semibold tabular-nums text-brand">{value}</div>
       {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
     </div>
   );
@@ -26,7 +26,7 @@ export function Panel({ title, actions, children }: { title?: string; actions?: 
   return (
     <section className="card">
       {(title || actions) && (
-        <header className="flex items-center justify-between border-b border-hairline px-4 py-3">
+        <header className="flex items-center justify-between border-b border-hairline bg-wash px-4 py-3">
           {title && <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>}
           {actions && <div className="flex gap-2 no-print">{actions}</div>}
         </header>
@@ -38,7 +38,7 @@ export function Panel({ title, actions, children }: { title?: string; actions?: 
 
 export function Notice({ kind = 'info', children }: { kind?: 'info' | 'warn'; children: ReactNode }) {
   return (
-    <div className={`border px-3 py-2 text-sm ${kind === 'warn' ? 'border-ink bg-wash font-medium' : 'border-hairline text-muted'}`}>
+    <div className={`border px-3 py-2 text-sm ${kind === 'warn' ? 'border-brand bg-brand-tint font-medium text-brand' : 'border-hairline text-muted'}`}>
       {children}
     </div>
   );
@@ -47,7 +47,7 @@ export function Notice({ kind = 'info', children }: { kind?: 'info' | 'warn'; ch
 export function ErrorNotice({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div role="alert" className="mb-4 border-2 border-ink bg-wash px-3 py-2 text-sm font-medium">
+    <div role="alert" className="notice-error mb-4">
       {message}
     </div>
   );
@@ -101,9 +101,9 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto border border-ink bg-paper">
-        <header className="flex items-center justify-between border-b border-hairline px-4 py-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto border border-brand-border bg-paper shadow-xl">
+        <header className="flex items-center justify-between border-b border-hairline bg-wash px-4 py-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-brand">{title}</h2>
           <button className="btn-quiet px-2 py-1" onClick={onClose} aria-label="Close">✕</button>
         </header>
         <div className="p-4">{children}</div>

@@ -35,7 +35,7 @@ export function PrintVouchersPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {data?.cards.map((card) => (
-          <article key={card.code} className="break-inside-avoid border-2 border-ink p-3">
+          <article key={card.code} className="print-card break-inside-avoid border-2 border-ink p-3">
             <div className="text-center text-[10px] font-bold uppercase tracking-widest">{hotspotName}</div>
             <div className="my-3 border-y border-hairline py-3 text-center">
               <div className="text-[9px] uppercase tracking-widest text-muted">Voucher</div>

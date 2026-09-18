@@ -32,11 +32,11 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       {/* Phone header: the operator often manages this from a handset. */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-ink bg-paper px-4 py-3 lg:hidden no-print">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-hairline bg-paper px-4 py-3 lg:hidden no-print">
         <button className="btn-quiet px-2 py-1" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="Toggle navigation">
           ☰
         </button>
-        <span className="text-sm font-semibold uppercase tracking-widest">Hotspot Vouchers</span>
+        <span className="text-sm font-semibold uppercase tracking-widest text-brand">Hotspot Vouchers</span>
         <button className="btn-quiet px-2 py-1 text-xs" onClick={() => void signOut()}>Sign out</button>
       </header>
 
@@ -46,8 +46,8 @@ export function Layout() {
                       lg:sticky lg:top-0 lg:block lg:h-screen lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r lg:border-hairline no-print`}
         >
           <div className="mb-6 hidden px-2 lg:block">
-            <div className="text-sm font-semibold uppercase tracking-widest">Hotspot</div>
-            <div className="text-sm font-semibold uppercase tracking-widest">Vouchers</div>
+            <div className="text-sm font-semibold uppercase tracking-widest text-brand">Hotspot</div>
+            <div className="text-sm font-semibold uppercase tracking-widest text-brand">Vouchers</div>
             <p className="mt-2 text-[11px] leading-relaxed text-muted">
               Starlink → MikroTik → Access points
             </p>
@@ -63,8 +63,8 @@ export function Layout() {
                 className={({ isActive }) =>
                   `block border-l-2 px-3 py-2 text-sm transition-colors ${
                     isActive && location.pathname === item.to
-                      ? 'border-ink bg-wash font-semibold'
-                      : 'border-transparent text-muted hover:border-hairline hover:text-ink'
+                      ? 'border-brand bg-brand-tint font-semibold text-brand'
+                      : 'border-transparent text-muted hover:border-brand-border hover:text-brand'
                   }`
                 }
               >

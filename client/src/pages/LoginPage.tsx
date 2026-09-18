@@ -18,7 +18,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-lg font-semibold uppercase tracking-widest">Hotspot Vouchers</h1>
+          <h1 className="text-lg font-semibold uppercase tracking-widest text-brand">Hotspot Vouchers</h1>
           <p className="mt-2 text-xs text-muted">Starlink → MikroTik → Access points</p>
         </div>
 
