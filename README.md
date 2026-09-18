@@ -132,6 +132,73 @@ reaches a shell.
 
 ---
 
+## Deploying on Vercel
+
+`vercel.json` builds the frontend as a static site and runs the API as a single
+catch-all serverless function (`api/[...slug].ts`), which hands the request to
+the same Express app used everywhere else.
+
+### Environment variables
+
+The same variables as any other host — `MONGODB_URI`, `JWT_SECRET`,
+`ROUTER_SECRET_KEY`, `VOUCHER_SECRET_KEY`, `SEED_ADMIN_USERNAME`,
+`SEED_ADMIN_PASSWORD` — plus one more:
+
+| Variable | Purpose |
+|---|---|
+| `CRON_SECRET` | Guards `/api/cron/sync`. Vercel sends it as `Authorization: Bearer <value>` on scheduled invocations. |
+
+Set `CRON_SECRET` to a long random value (`openssl rand -hex 32`). Without it the
+sync route refuses to run at all, rather than running unauthenticated.
+
+Seeding has no shell on Vercel, so run it from your own machine with the
+production `MONGODB_URI` exported:
+
+```bash
+cd server && MONGODB_URI="<your atlas string>" \
+  ROUTER_SECRET_KEY=... VOUCHER_SECRET_KEY=... JWT_SECRET=... \
+  SEED_ADMIN_USERNAME=Admin1 SEED_ADMIN_PASSWORD=Admin321 \
+  NODE_ENV=production node dist/seed.js
+```
+
+### What serverless costs you here
+
+Vercel has no long-running process, which this application did rely on. The
+consequences, in order of how much they matter:
+
+1. **Session history and usage accounting become cron-driven.** On a normal host
+   a worker polls every router each minute and opens/closes `Session` records
+   from the differences. On Vercel that worker cannot exist, so `/api/cron/sync`
+   does one pass per scheduled invocation. **Vercel's cron granularity depends on
+   your plan** — on Hobby it is effectively once per day, which makes session and
+   usage figures close to worthless. Minute-level scheduling needs Pro. Check
+   which you are on before relying on any usage number. The default schedule in
+   `vercel.json` is every 5 minutes, which only takes effect on a plan that
+   allows it.
+2. **Rate limiting degrades.** `express-rate-limit` counts in memory, and each
+   serverless instance has its own. The login throttle therefore limits per
+   instance rather than globally. It still helps, but it is no longer a hard
+   ceiling; a shared store (Redis) would be needed for that.
+3. **Router connections are not pooled.** The pool keeps one connection per
+   router alive across requests. On serverless each cold invocation reconnects,
+   which adds a round trip over an already high-latency satellite link.
+4. **Uploads are capped** at roughly 4.5 MB by the platform, so the import limit
+   is set to 4 MB. A 10,000-line MikroTik command file is around 1 MB, so this is
+   not a practical constraint.
+
+None of this affects hotspot customers. MikroTik authenticates them regardless.
+
+### Reaching the router still applies — more so
+
+The CGNAT problem described in the Render section is unchanged: a cloud function
+cannot dial into a router that has no inbound public address. If anything it is
+worse on serverless, because there is no persistent process that could hold a
+tunnel open. If you need Active Users, Sync and Push to work, run this on a host
+that sits on the same network as the router, or on a VPS the router dials out to
+over WireGuard.
+
+---
+
 ## Deploying on Render
 
 The repository includes `render.yaml`, which defines a single web service that

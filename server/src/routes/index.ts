@@ -12,12 +12,15 @@ import * as auth from '../controllers/authController';
 import * as vouchers from '../controllers/voucherController';
 import * as resources from '../controllers/resourceControllers';
 import * as network from '../controllers/networkController';
+import * as cron from '../controllers/cronController';
 
 // Import files are held in memory and parsed; they are never written to disk
 // and never handed to a shell.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+  // Kept under the ~4.5 MB request body cap that serverless platforms impose.
+  // A 10,000-line MikroTik command file is roughly 1 MB, so this is ample.
+  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (/\.(txt|csv|json)$/i.test(file.originalname)) return cb(null, true);
     cb(new Error('Only .txt, .csv and .json files can be imported'));
@@ -26,6 +29,11 @@ const upload = multer({
 
 const idParam = z.object({ id: z.string().min(1) });
 const api = Router();
+
+/* Scheduler-triggered sync. Registered before `authenticate` because the
+   caller is a cron service holding CRON_SECRET, not a signed-in user. */
+api.post('/cron/sync', asyncHandler(cron.runSync));
+api.get('/cron/sync', asyncHandler(cron.runSync));
 
 /* auth */
 api.post('/auth/login', authLimiter, validate(auth.loginSchema), asyncHandler(auth.login));

@@ -39,6 +39,8 @@ export const env = {
   voucherSecretKey: hexKey('VOUCHER_SECRET_KEY', 'b'.repeat(64)),
   corsOrigin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(',').map((s) => s.trim()),
   syncEnabled: (process.env.SYNC_ENABLED ?? 'true') === 'true',
+  /** Shared secret for the scheduler-triggered sync route. Unset disables it. */
+  cronSecret: process.env.CRON_SECRET ?? '',
   syncIntervalMs: Number(process.env.SYNC_INTERVAL_MS ?? 60_000),
   routerTimeoutMs: Number(process.env.ROUTER_TIMEOUT_MS ?? 8_000),
   seedAdminUsername: process.env.SEED_ADMIN_USERNAME ?? 'admin',
