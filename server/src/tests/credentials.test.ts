@@ -20,15 +20,17 @@ test('a configured username is normalised the same way on seed and on login', ()
   }
 });
 
-test('the seeded password verifies against its stored hash', async () => {
-  const hash = await hashPassword('Admin321');
+test('a seeded password verifies against its stored hash', async () => {
+  // A stand-in, not anyone's real password: this file is committed.
+  const sample = 'Sample123';
+  const hash = await hashPassword(sample);
 
-  assert.notEqual(hash, 'Admin321', 'the password must never be stored in plaintext');
+  assert.notEqual(hash, sample, 'the password must never be stored in plaintext');
   assert.match(hash, /^\$2[aby]\$/, 'expected a bcrypt hash');
-  assert.equal(await bcrypt.compare('Admin321', hash), true);
+  assert.equal(await bcrypt.compare(sample, hash), true);
 
   // Near misses must fail: bcrypt is case sensitive and does not trim.
-  for (const wrong of ['admin321', 'Admin32', 'Admin3211', ' Admin321', '']) {
+  for (const wrong of ['sample123', 'Sample12', 'Sample1234', ' Sample123', '']) {
     assert.equal(await bcrypt.compare(wrong, hash), false, `"${wrong}" must not authenticate`);
   }
 });

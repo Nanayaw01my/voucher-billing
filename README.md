@@ -157,7 +157,7 @@ production `MONGODB_URI` exported:
 ```bash
 cd server && MONGODB_URI="<your atlas string>" \
   ROUTER_SECRET_KEY=... VOUCHER_SECRET_KEY=... JWT_SECRET=... \
-  SEED_ADMIN_USERNAME=Admin1 SEED_ADMIN_PASSWORD=Admin321 \
+  SEED_ADMIN_USERNAME='<your admin username>' SEED_ADMIN_PASSWORD='<your admin password>' \
   NODE_ENV=production node dist/seed.js
 ```
 
