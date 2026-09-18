@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* White background, black text, everywhere. No dark mode is offered:
+     the operator asked for one flat monochrome theme. */
+  html, body, #root {
+    @apply bg-paper text-ink;
+    min-height: 100%;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    @apply bg-ink text-paper;
+  }
+  /* Focus rings stay black so keyboard navigation is still obvious. */
+  :focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card { @apply border border-hairline bg-paper; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 border border-ink px-3 py-2
+           text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary { @apply btn bg-ink text-paper hover:bg-paper hover:text-ink; }
+  .btn-secondary { @apply btn bg-paper text-ink hover:bg-ink hover:text-paper; }
+  .btn-quiet { @apply btn border-hairline bg-paper text-ink hover:border-ink; }
+  .field {
+    @apply w-full border border-hairline bg-paper px-3 py-2 text-sm text-ink
+           placeholder:text-muted focus:border-ink focus:outline-none;
+  }
+  .label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted; }
+  .chip { @apply inline-block border border-ink px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide; }
+  .chip-quiet { @apply inline-block border border-hairline px-2 py-0.5 text-[11px] uppercase tracking-wide text-muted; }
+  .th { @apply whitespace-nowrap px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted; }
+  .td { @apply whitespace-nowrap border-t border-hairline px-3 py-2 text-sm; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+}
