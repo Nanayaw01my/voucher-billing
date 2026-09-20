@@ -304,6 +304,68 @@ test('bulk delete does not touch the router unless asked', async (t) => {
   assert.equal(purge.body.routerFailures.length, 0);
 });
 
+test('system reset clears the chosen scopes and keeps the rest', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const { Voucher, Sale, SessionModel, ImportBatch, PackageModel, User } = await import('../models');
+
+  const usersBefore = await User.countDocuments();
+  const packagesBefore = await PackageModel.countDocuments();
+  assert.ok(usersBefore > 0 && packagesBefore > 0, 'need existing data for this to mean anything');
+
+  const reset = await request(app, 'POST', '/api/system/reset', {
+    token, body: { scopes: ['vouchers'], confirm: 'RESET' },
+  });
+
+  assert.equal(reset.status, 200);
+  assert.equal(await Voucher.countDocuments(), 0);
+  assert.equal(await Sale.countDocuments(), 0);
+  assert.equal(await SessionModel.countDocuments(), 0);
+  assert.equal(await ImportBatch.countDocuments(), 0);
+
+  // Untouched, because they were not in the chosen scope.
+  assert.equal(await User.countDocuments(), usersBefore, 'user accounts must survive');
+  assert.equal(await PackageModel.countDocuments(), packagesBefore, 'configuration must survive');
+});
+
+test('the reset is still recorded even when the audit log is one of the scopes', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const { AuditLog } = await import('../models');
+
+  const reset = await request(app, 'POST', '/api/system/reset', {
+    token, body: { scopes: ['auditLogs'], confirm: 'RESET' },
+  });
+  assert.equal(reset.status, 200);
+
+  const remaining = await AuditLog.find().lean();
+  assert.equal(remaining.length, 1, 'exactly the entry describing the reset');
+  assert.equal(remaining[0]!.action, 'SYSTEM_RESET');
+});
+
+test('system reset refuses without the typed confirmation, or from a non-super-admin', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+
+  const noConfirm = await request(app, 'POST', '/api/system/reset', { token, body: { scopes: ['vouchers'] } });
+  assert.equal(noConfirm.status, 400);
+
+  const wrongWord = await request(app, 'POST', '/api/system/reset', {
+    token, body: { scopes: ['vouchers'], confirm: 'reset' },
+  });
+  assert.equal(wrongWord.status, 400, 'the confirmation is case sensitive');
+
+  const noScopes = await request(app, 'POST', '/api/system/reset', {
+    token, body: { scopes: [], confirm: 'RESET' },
+  });
+  assert.equal(noScopes.status, 400);
+
+  const login = await request(app, 'POST', '/api/auth/login', {
+    body: { username: 'kofi', password: 'SellerPass123' },
+  });
+  const refused = await request(app, 'POST', '/api/system/reset', {
+    token: login.body.token, body: { scopes: ['vouchers'], confirm: 'RESET' },
+  });
+  assert.equal(refused.status, 403);
+});
+
 test('an unknown route returns a readable message, not a stack trace', async (t) => {
   if (skipIfNoDatabase(t)) return;
   const response = await request(app, 'GET', '/api/nope', { token });

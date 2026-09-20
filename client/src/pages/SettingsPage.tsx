@@ -3,6 +3,7 @@ import { api } from '../api/endpoints';
 import { useAuth } from '../hooks/useAuth';
 import { useAsync, useSubmit } from '../hooks/useApi';
 import { DEFAULT_HOTSPOT_NAME } from '../lib/brand';
+import { DangerZone } from '../components/DangerZone';
 import { PageHeader, Panel, Field, ErrorNotice, Notice, Loading, TableWrap, Empty } from '../components/ui';
 
 export function SettingsPage() {
@@ -98,6 +99,8 @@ export function SettingsPage() {
             </div>
           </Panel>
         )}
+
+        {can('SUPER_ADMIN') && <DangerZone onDone={() => routers.reload()} />}
 
         <Panel title="How this system relates to MikroTik">
           <div className="space-y-2 p-4 text-sm leading-relaxed text-muted">

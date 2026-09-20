@@ -11,6 +11,7 @@ export const AUDIT_ACTIONS = [
   'ACCESS_POINT_CREATED', 'ACCESS_POINT_UPDATED',
   'SALE_CREATED',
   'USER_DISCONNECTED',
+  'SYSTEM_RESET',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

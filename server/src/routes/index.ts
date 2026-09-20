@@ -13,6 +13,7 @@ import * as vouchers from '../controllers/voucherController';
 import * as resources from '../controllers/resourceControllers';
 import * as network from '../controllers/networkController';
 import * as cron from '../controllers/cronController';
+import * as system from '../controllers/systemController';
 
 // Import files are held in memory and parsed; they are never written to disk
 // and never handed to a shell.
@@ -111,6 +112,15 @@ api.patch('/locations/:id', requireAdmin, asyncHandler(resources.updateLocation)
 api.get('/access-points', asyncHandler(resources.listAccessPoints));
 api.post('/access-points', requireAdmin, validate(resources.accessPointSchema), asyncHandler(resources.createAccessPoint));
 api.patch('/access-points/:id', requireAdmin, asyncHandler(resources.updateAccessPoint));
+
+/* destructive bulk clear -- super admin only, and rate limited */
+api.post(
+  '/system/reset',
+  requireSuperAdmin,
+  heavyLimiter,
+  validate(system.systemResetSchema),
+  asyncHandler(system.resetSystem),
+);
 
 /* sessions, reporting, audit */
 api.get('/sessions', validate(resources.listSessionsSchema, 'query'), asyncHandler(resources.listSessions));

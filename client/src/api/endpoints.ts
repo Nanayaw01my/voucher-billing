@@ -98,6 +98,16 @@ export const api = {
     list: (query: Record<string, string | number | undefined>) => request<Paged<Session>>(withQuery('/sessions', query)),
   },
 
+  system: {
+    reset: (scopes: string[]) =>
+      request<{
+        deleted: Record<string, number>;
+        scopes: string[];
+        usersKept: number;
+        note: string;
+      }>('/system/reset', { method: 'POST', body: { scopes, confirm: 'RESET' } }),
+  },
+
   dashboard: () => request<Dashboard>('/dashboard'),
   reports: (query: Record<string, string | undefined>) => request<ReportsResponse>(withQuery('/reports', query)),
   auditLogs: (query: Record<string, string | number | undefined>) => request<Paged<AuditRecord>>(withQuery('/audit-logs', query)),
