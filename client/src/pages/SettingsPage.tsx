@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/endpoints';
 import { useAuth } from '../hooks/useAuth';
 import { useAsync, useSubmit } from '../hooks/useApi';
+import { DEFAULT_HOTSPOT_NAME } from '../lib/brand';
 import { PageHeader, Panel, Field, ErrorNotice, Notice, Loading, TableWrap, Empty } from '../components/ui';
 
 export function SettingsPage() {
   const { user, can } = useAuth();
-  const [hotspotName, setHotspotName] = useState(() => localStorage.getItem('voucher.hotspotName') ?? 'HOTSPOT');
+  const [hotspotName, setHotspotName] = useState(() => localStorage.getItem('voucher.hotspotName') ?? DEFAULT_HOTSPOT_NAME);
   const [password, setPassword] = useState('');
   const [saved, setSaved] = useState(false);
 

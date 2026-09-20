@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubmit } from '../hooks/useApi';
 import { ErrorNotice, Field } from '../components/ui';
+import { BRAND_NAME } from '../lib/brand';
 
 export function LoginPage() {
   const { signIn } = useAuth();
@@ -18,7 +19,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-lg font-semibold uppercase tracking-widest text-brand">Hotspot Vouchers</h1>
+          <h1 className="text-lg font-semibold uppercase tracking-widest text-brand">{BRAND_NAME}</h1>
           <p className="mt-2 text-xs text-muted">Starlink → MikroTik → Access points</p>
         </div>
 

@@ -4,6 +4,7 @@ import { api } from '../api/endpoints';
 import { useAsync } from '../hooks/useApi';
 import { Loading, ErrorNotice } from '../components/ui';
 import { formatMoney } from '../lib/format';
+import { DEFAULT_HOTSPOT_NAME } from '../lib/brand';
 
 /**
  * A bare print sheet: black on white cards, four to a row, no app chrome.
@@ -13,7 +14,7 @@ import { formatMoney } from '../lib/format';
 export function PrintVouchersPage() {
   const [params] = useSearchParams();
   const ids = (params.get('ids') ?? '').split(',').filter(Boolean);
-  const [hotspotName, setHotspotName] = useState(() => localStorage.getItem('voucher.hotspotName') ?? 'HOTSPOT');
+  const [hotspotName, setHotspotName] = useState(() => localStorage.getItem('voucher.hotspotName') ?? DEFAULT_HOTSPOT_NAME);
 
   const { data, loading, error } = useAsync(() => api.vouchers.print(ids), [params.get('ids')]);
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { Role } from '../api/types';
+import { BRAND_NAME, BRAND_LINES } from '../lib/brand';
 
 interface NavItem { to: string; label: string; roles?: Role[] }
 
@@ -36,7 +37,7 @@ export function Layout() {
         <button className="btn-quiet px-2 py-1" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label="Toggle navigation">
           ☰
         </button>
-        <span className="text-sm font-semibold uppercase tracking-widest text-brand">Hotspot Vouchers</span>
+        <span className="text-sm font-semibold uppercase tracking-widest text-brand">{BRAND_NAME}</span>
         <button className="btn-quiet px-2 py-1 text-xs" onClick={() => void signOut()}>Sign out</button>
       </header>
 
@@ -46,8 +47,11 @@ export function Layout() {
                       lg:sticky lg:top-0 lg:block lg:h-screen lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r lg:border-hairline no-print`}
         >
           <div className="mb-6 hidden px-2 lg:block">
-            <div className="text-sm font-semibold uppercase tracking-widest text-brand">Hotspot</div>
-            <div className="text-sm font-semibold uppercase tracking-widest text-brand">Vouchers</div>
+            {BRAND_LINES.map((line) => (
+              <div key={line} className="text-sm font-semibold uppercase tracking-widest text-brand">
+                {line}
+              </div>
+            ))}
             <p className="mt-2 text-[11px] leading-relaxed text-muted">
               Starlink → MikroTik → Access points
             </p>
