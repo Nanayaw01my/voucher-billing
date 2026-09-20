@@ -4,7 +4,7 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { startSyncWorker, stopSyncWorker } from './workers/syncWorker';
 import { routerPool } from './services/mikrotik';
-import { bootstrapIfEmpty } from './services/bootstrap';
+import { bootstrapIfEmpty, resetAdminPasswordIfRequested } from './services/bootstrap';
 
 async function main(): Promise<void> {
   await connectDatabase();
@@ -14,6 +14,8 @@ async function main(): Promise<void> {
   try {
     const bootstrap = await bootstrapIfEmpty();
     if (bootstrap.adminCreated) logger.info('Bootstrapped an empty database');
+    else if (bootstrap.skippedReason) logger.info(`First-run setup skipped: ${bootstrap.skippedReason}`);
+    await resetAdminPasswordIfRequested();
   } catch (err) {
     // Never block startup on this: the API is still useful, and the cause is logged.
     logger.error('First-run setup failed', { error: (err as Error).message });

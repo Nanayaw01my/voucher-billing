@@ -1,4 +1,4 @@
-import { User, hashPassword, PackageModel, Location } from '../models';
+import { User, hashPassword, PackageModel, Location, AuditLog } from '../models';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
@@ -12,6 +12,57 @@ const PACKAGES = [
   { name: '2 GB', dataLimitBytes: 2 * 1024 ** 3, price: 9, mikrotikProfile: 'VOUCHER-2GB' },
   { name: '5 GB', dataLimitBytes: 5 * 1024 ** 3, price: 20, mikrotikProfile: 'VOUCHER-5GB' },
 ];
+
+/**
+ * Resets the administrator's password from the environment, for a deployment
+ * with no shell access. Gated on ADMIN_PASSWORD_RESET, which only whoever
+ * controls the hosting dashboard can set -- the same authority a shell would
+ * give. It is loud in the logs and recorded in the audit trail.
+ *
+ * Needed because first-run setup deliberately does nothing once a user exists,
+ * so changing SEED_ADMIN_PASSWORD afterwards otherwise has no effect at all.
+ */
+export async function resetAdminPasswordIfRequested(): Promise<boolean> {
+  if ((process.env.ADMIN_PASSWORD_RESET ?? '').toLowerCase() !== 'true') return false;
+
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password || password === PLACEHOLDER_PASSWORD) {
+    logger.warn('ADMIN_PASSWORD_RESET is set but SEED_ADMIN_PASSWORD is missing or still the example value');
+    return false;
+  }
+
+  const username = env.seedAdminUsername.toLowerCase();
+  const passwordHash = await hashPassword(password);
+  const existing = await User.findOne({ username });
+
+  if (existing) {
+    existing.passwordHash = passwordHash;
+    existing.status = 'ACTIVE'; // a locked-out admin is the case this exists for
+    await existing.save();
+  } else {
+    await User.create({
+      name: 'Administrator',
+      username,
+      passwordHash,
+      role: 'SUPER_ADMIN',
+      status: 'ACTIVE',
+    });
+  }
+
+  await AuditLog.create({
+    username,
+    action: 'ADMIN_PASSWORD_RESET',
+    entity: 'User',
+    metadata: { via: 'ADMIN_PASSWORD_RESET environment variable', created: !existing },
+    timestamp: new Date(),
+  });
+
+  logger.warn(
+    `Administrator password was reset for "${username}". Remove ADMIN_PASSWORD_RESET from the environment now -- ` +
+      'while it is set, every restart resets this password again.',
+  );
+  return true;
+}
 
 /** The stand-in in .env.example. Never acceptable on a public deployment. */
 const PLACEHOLDER_PASSWORD = 'ChangeMe123!';
