@@ -23,7 +23,17 @@ const PACKAGES = [
  * so changing SEED_ADMIN_PASSWORD afterwards otherwise has no effect at all.
  */
 export async function resetAdminPasswordIfRequested(): Promise<boolean> {
-  if ((process.env.ADMIN_PASSWORD_RESET ?? '').toLowerCase() !== 'true') return false;
+  const flag = (process.env.ADMIN_PASSWORD_RESET ?? '').trim();
+  if (flag.toLowerCase() !== 'true') {
+    // A set-but-wrong value means someone is trying to use this and it is not
+    // firing. Silence there would look identical to the feature being broken.
+    if (flag) {
+      logger.warn(
+        `ADMIN_PASSWORD_RESET is set to "${flag}", which is not "true", so no password was reset`,
+      );
+    }
+    return false;
+  }
 
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (!password || password === PLACEHOLDER_PASSWORD) {
@@ -86,7 +96,14 @@ export async function bootstrapIfEmpty(): Promise<BootstrapResult> {
 
   const existingUsers = await User.countDocuments();
   if (existingUsers > 0) {
-    result.skippedReason = 'database already has users';
+    // Name the administrators that exist. Without this, an operator who cannot
+    // sign in has no way to tell a wrong password from a wrong username.
+    const admins = await User.find({ role: { $in: ['SUPER_ADMIN', 'ADMIN'] } })
+      .select('username role status')
+      .lean();
+    result.skippedReason =
+      `database already has ${existingUsers} user(s); administrators: ` +
+      (admins.map((a) => `${a.username} (${a.role}, ${a.status})`).join(', ') || 'none');
     return result;
   }
 

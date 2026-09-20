@@ -20,11 +20,11 @@ before(async () => {
  * database: they must all return before any query runs.
  */
 
-test('does nothing unless ADMIN_PASSWORD_RESET is exactly "true"', async () => {
+test('does nothing unless ADMIN_PASSWORD_RESET says true', async () => {
   const password = process.env.SEED_ADMIN_PASSWORD;
   process.env.SEED_ADMIN_PASSWORD = 'AGenuinelyNewPassword1';
 
-  for (const value of [undefined, '', 'false', '1', 'yes', 'TRUE ']) {
+  for (const value of [undefined, '', 'false', '1', 'yes', 'no', 'enabled']) {
     if (value === undefined) delete process.env.ADMIN_PASSWORD_RESET;
     else process.env.ADMIN_PASSWORD_RESET = value;
 
@@ -55,12 +55,25 @@ test('declines when no password is supplied, or it is still the example value', 
   else process.env.SEED_ADMIN_PASSWORD = password;
 });
 
-test('case of the flag is accepted, since a dashboard may store "True"', async () => {
-  // Guards against a reset silently not happening because of capitalisation.
-  process.env.ADMIN_PASSWORD_RESET = 'True';
-  process.env.SEED_ADMIN_PASSWORD = 'ChangeMe123!'; // still refused, but for the password reason
-  const declinedForPassword = await bootstrap.resetAdminPasswordIfRequested();
-  assert.equal(declinedForPassword, false);
+test('capitalisation and stray whitespace in the flag still count as true', async () => {
+  /*
+   * A value typed into a hosting dashboard picks up capitals and trailing
+   * spaces. Those are accidents, not attack vectors -- the real authority is
+   * being able to set the variable at all -- and rejecting them would fail
+   * silently, which is the exact problem this feature exists to solve.
+   *
+   * Each case below gets past the flag and is then refused on the password,
+   * which is what proves the flag itself was accepted.
+   */
+  process.env.SEED_ADMIN_PASSWORD = 'ChangeMe123!'; // the example value, always refused
+  for (const flag of ['true', 'True', 'TRUE', ' true ', 'TRUE ']) {
+    process.env.ADMIN_PASSWORD_RESET = flag;
+    assert.equal(
+      await bootstrap.resetAdminPasswordIfRequested(),
+      false,
+      `${JSON.stringify(flag)} should reach the password check, then decline there`,
+    );
+  }
   delete process.env.ADMIN_PASSWORD_RESET;
   delete process.env.SEED_ADMIN_PASSWORD;
 });
