@@ -28,17 +28,17 @@ set [find name~"VOUCHER"] on-login=":local u \$user; :local m \$\"mac-address\";
 # --- watch it working ----------------------------------------------------
 # After a customer logs in for the first time:
 #   /log print where message~"locked to device"
-#   /ip hotspot user print detail where name="THEIRCODE"
+#   /ip hotspot user print detail where name="64734784"
 # The mac-address field will be filled in.
 #
 # --- free a voucher that a customer legitimately needs moved -------------
 # Clears the lock so the next device to use it claims it instead:
-#   /ip hotspot user set [find name="THEIRCODE"] !mac-address
+#   /ip hotspot user set [find name="64734784"] mac-address=00:00:00:00:00:00
 #
 # --- turn the whole thing off --------------------------------------------
 #   /ip hotspot user profile set [find name~"VOUCHER"] on-login=""
 # Existing locks stay until cleared individually, or all at once with:
-#   /ip hotspot user set [find where mac-address!="00:00:00:00:00:00"] !mac-address
+#   /ip hotspot user set [find where mac-address!="00:00:00:00:00:00"] mac-address=00:00:00:00:00:00
 
 
 # =============================================================================

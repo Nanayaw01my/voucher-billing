@@ -89,19 +89,22 @@ set [find name~"VOUCHER"] on-login=":global vfuUser \$user; :global vfuMac \$\"m
 #
 #  After a customer logs in for the first time:
 #    /log print where message~"voucher"
-#    /ip hotspot user print detail where name="THEIRCODE"     (mac-address set)
+#    /ip hotspot user print detail where name="64734784"     (mac-address set)
 #    /system scheduler print where name~"expire-"             (their countdown)
 #
 #  How long a voucher has left:
-#    /system scheduler print detail where name="expire-THEIRCODE"
+#    /system scheduler print detail where name="expire-64734784"
 #
 #  MANAGING IT
 #
 #  Give a customer their voucher back (clears the lock and the countdown).
-#  Note the exclamation mark: that is how RouterOS clears a property.
-#  Writing mac-address="" instead fails with "mac address required".
-#    /ip hotspot user set [find name="THEIRCODE"] !mac-address disabled=no
-#    /system scheduler remove [find name="expire-THEIRCODE"]
+#
+#  Replace THEIRCODE with the actual voucher, e.g. 64734784.
+#  All-zeroes is how MikroTik expresses "any device" -- the property will not
+#  take an empty value, and !mac-address is not accepted here.
+#
+#    /ip hotspot user set [find name="64734784"] mac-address=00:00:00:00:00:00 disabled=no
+#    /system scheduler remove [find name="expire-64734784"]
 #
 #  Confirm it was applied to all eight profiles:
 #    /ip hotspot user profile print detail where on-login!=""
@@ -110,7 +113,7 @@ set [find name~"VOUCHER"] on-login=":global vfuUser \$user; :global vfuMac \$\"m
 #    /ip hotspot user profile set [find name~"VOUCHER"] on-login=""
 #  Then clear what it left behind, if you want to:
 #    /system scheduler remove [find comment="EUNISET LOVE voucher expiry"]
-#    /ip hotspot user set [find where mac-address!="00:00:00:00:00:00"] !mac-address
+#    /ip hotspot user set [find where mac-address!="00:00:00:00:00:00"] mac-address=00:00:00:00:00:00
 #
 #  TWO THINGS TO KNOW
 #
