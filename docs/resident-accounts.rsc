@@ -38,13 +38,36 @@
 # what a resident expects and a tourist does not. Set it to 1 if you want one
 # device only; raise it for a household sharing a single account.
 #
+# add-mac-cookie=yes is the one place this setup deliberately differs from the
+# voucher profiles, which all use no. A cookie lets a phone log back in without
+# retyping the code. On a voucher that is a hole -- it is how a code gets
+# stretched across devices and days, which is why the voucher profiles refuse
+# it. On a resident account there is nothing to protect: the account is
+# permanently theirs by design. So the resident types their code once, and
+# after that their phone connects silently. No login page every morning.
+#
+# How long a phone is remembered is set below, on the server profile.
+#
 # rate-limit is upload/download. These are faster than the voucher profiles
 # because residents are paying monthly, not by the hour. Adjust to taste.
 
 /ip hotspot user profile
 remove [find name="RESIDENT"]
-add name=RESIDENT shared-users=2 add-mac-cookie=no rate-limit="4M/10M" \
+add name=RESIDENT shared-users=2 add-mac-cookie=yes rate-limit="4M/10M" \
     status-autorefresh=1m
+
+
+# How long a remembered device stays remembered.
+#
+# This lives on the SERVER profile (/ip hotspot profile), not the user profile,
+# so it is a single setting shared by everyone. That is safe here only because
+# every VOUCHER-* profile sets add-mac-cookie=no and so never creates a cookie
+# for this timeout to apply to. RESIDENT is the only profile that makes one.
+#
+# If you ever turn add-mac-cookie on for a voucher profile, this 30 days starts
+# applying to those vouchers too, and a 24-hour code becomes a 30-day one.
+
+/ip hotspot profile set [find] mac-cookie-timeout=30d
 
 
 # --- the device lock ---------------------------------------------------------
@@ -115,6 +138,18 @@ set [find name="RESIDENT"] \
 #  PAID AGAIN -- switch them back on:
 #
 #    /ip hotspot user set [find name="kwame"] disabled=no
+#
+#  THEY ARE BEING ASKED FOR THE CODE EVERY DAY
+#
+#  Their phone is not being remembered. Check the profile still has the cookie
+#  turned on, and that the timeout survived a later edit:
+#
+#    /ip hotspot user profile print detail where name="RESIDENT"
+#    /ip hotspot profile print detail
+#
+#  After switching an account off and on again the old cookie is gone, so they
+#  type their code once more. That is expected, not a fault.
+#
 #
 #  NEW PHONE -- clear the device lock so it binds to the new one.
 #  All-zeroes is how MikroTik expresses "any device": the property will not
