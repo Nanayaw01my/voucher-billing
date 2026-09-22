@@ -103,6 +103,7 @@ api.delete('/routers/:id', requireSuperAdmin, asyncHandler(resources.deleteRoute
 api.post('/routers/:id/test', requireAdmin, asyncHandler(resources.testRouter));
 api.post('/routers/:id/sync', requireAdmin, heavyLimiter, asyncHandler(resources.syncRouterHandler));
 api.post('/routers/:id/push', requireAdmin, heavyLimiter, asyncHandler(resources.pushRouterHandler));
+api.post('/routers/:id/adopt', requireAdmin, heavyLimiter, asyncHandler(resources.adoptRouterVouchers));
 api.get('/routers/:id/profiles', requireAdmin, asyncHandler(resources.routerProfiles));
 
 /* locations & access points */

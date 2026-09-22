@@ -366,6 +366,37 @@ test('system reset refuses without the typed confirmation, or from a non-super-a
   assert.equal(refused.status, 403);
 });
 
+test('adopting from an unreachable router fails softly, not with a 500', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const { RouterModel } = await import('../models');
+  const { encryptSecret } = await import('../utils/crypto');
+  const { env } = await import('../config/env');
+
+  // A router that cannot answer -- which is the normal case from a cloud host.
+  const router = await RouterModel.create({
+    name: 'Unreachable', host: '203.0.113.1', port: 8728, username: 'x',
+    encryptedPassword: encryptSecret('y', env.routerSecretKey), status: 'ACTIVE',
+  });
+
+  const response = await request(app, 'POST', `/api/routers/${router._id}/adopt`, { token });
+  assert.equal(response.status, 503, 'an unreachable router is a 503, not a crash');
+  assert.match(response.body.error.message, /unreachable|timed out|refused/i);
+  assert.ok(!JSON.stringify(response.body).includes('at Object'), 'no stack trace leaks');
+
+  await RouterModel.deleteOne({ _id: router._id });
+});
+
+test('adoption is admin-only', async (t) => {
+  if (skipIfNoDatabase(t)) return;
+  const login = await request(app, 'POST', '/api/auth/login', {
+    body: { username: 'kofi', password: 'SellerPass123' },
+  });
+  const refused = await request(app, 'POST', '/api/routers/000000000000000000000000/adopt', {
+    token: login.body.token,
+  });
+  assert.equal(refused.status, 403);
+});
+
 test('an unknown route returns a readable message, not a stack trace', async (t) => {
   if (skipIfNoDatabase(t)) return;
   const response = await request(app, 'GET', '/api/nope', { token });

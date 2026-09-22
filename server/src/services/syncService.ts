@@ -1,9 +1,11 @@
 import type { Types } from 'mongoose';
-import { RouterModel, SessionModel, Voucher, type IRouter } from '../models';
+import { RouterModel, SessionModel, Voucher, PackageModel, type IRouter } from '../models';
 import { routerPool, type ActiveHotspotUser } from './mikrotik';
 import { decryptSecret } from '../utils/crypto';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
+import { ApiError } from '../utils/apiError';
+import { encryptSecret } from '../utils/crypto';
 
 export interface ActiveUserView extends ActiveHotspotUser {
   routerId: string;
@@ -232,4 +234,98 @@ export async function pushVouchersToRouter(routerId: string, voucherIds?: string
   }
 
   return { pushed, failed };
+}
+
+
+export interface AdoptionResult {
+  found: number;
+  adopted: number;
+  alreadyKnown: number;
+  skipped: Array<{ name: string; reason: string }>;
+}
+
+/**
+ * Creates voucher records for hotspot users that exist on the router but not
+ * in this system.
+ *
+ * Ordinary sync deliberately only updates vouchers it already knows, so stock
+ * created directly on the router -- by an import, or by hand before this
+ * system existed -- was invisible here. This adopts it.
+ *
+ * The package is matched by profile name, so an adopted voucher arrives priced
+ * rather than as unpriced stock.
+ */
+export async function adoptVouchersFromRouter(routerId: string): Promise<AdoptionResult> {
+  const router = await RouterModel.findById(routerId);
+  if (!router) throw ApiError.notFound('That router does not exist.');
+
+  const service = await routerPool.acquire(routerId);
+  const users = await service.listHotspotUsers();
+
+  const result: AdoptionResult = { found: users.length, adopted: 0, alreadyKnown: 0, skipped: [] };
+  if (users.length === 0) return result;
+
+  // Which of these do we already hold? Chunked, since a router can carry
+  // thousands of users.
+  const known = new Set<string>();
+  const names = users.map((u) => u.name);
+  for (let i = 0; i < names.length; i += 1000) {
+    const found = await Voucher.find({ username: { $in: names.slice(i, i + 1000) } }).select('username').lean();
+    for (const doc of found) known.add(doc.username);
+  }
+
+  // Profile name -> package, so adopted vouchers inherit a price.
+  const packages = await PackageModel.find().select('mikrotikProfile durationSeconds dataLimitBytes').lean();
+  const packageByProfile = new Map(packages.map((p) => [p.mikrotikProfile, p]));
+
+  const documents = [];
+  for (const user of users) {
+    if (known.has(user.name)) {
+      result.alreadyKnown += 1;
+      continue;
+    }
+    if (!user.profile) {
+      result.skipped.push({ name: user.name, reason: 'no profile on the router' });
+      continue;
+    }
+    // Without the password the voucher could never be printed or re-pushed,
+    // so adopting it would create a record that cannot be sold.
+    if (!user.password) {
+      result.skipped.push({ name: user.name, reason: 'router did not return a password' });
+      continue;
+    }
+
+    const pkg = packageByProfile.get(user.profile);
+    documents.push({
+      code: user.name.toUpperCase(),
+      username: user.name,
+      encryptedPassword: encryptSecret(user.password, env.voucherSecretKey),
+      packageId: pkg?._id,
+      profileName: user.profile,
+      limitUptimeSeconds: user.limitUptimeSeconds ?? pkg?.durationSeconds ?? undefined,
+      dataLimitBytes: user.limitBytesTotal ?? pkg?.dataLimitBytes ?? undefined,
+      // It already exists on the router -- that is where we found it.
+      status: user.disabled ? ('DISABLED' as const) : ('AVAILABLE' as const),
+      routerId: router._id,
+      locationId: router.locationId,
+      pushedToRouter: true,
+      pushedAt: new Date(),
+    });
+  }
+
+  const CHUNK = 500;
+  for (let i = 0; i < documents.length; i += CHUNK) {
+    const slice = documents.slice(i, i + CHUNK);
+    try {
+      await Voucher.insertMany(slice, { ordered: false });
+      result.adopted += slice.length;
+    } catch (err) {
+      // ordered:false keeps going past duplicates; count what landed.
+      const writeErrors = (err as { writeErrors?: unknown[] }).writeErrors ?? [];
+      result.adopted += slice.length - writeErrors.length;
+    }
+  }
+
+  logger.info('Adopted vouchers from router', { router: router.name, ...result, skipped: result.skipped.length });
+  return result;
 }

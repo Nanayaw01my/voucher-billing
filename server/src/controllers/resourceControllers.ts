@@ -11,7 +11,7 @@ import { ApiError } from '../utils/apiError';
 import { encryptSecret } from '../utils/crypto';
 import { env } from '../config/env';
 import { routerPool, testRouterConnection } from '../services/mikrotik';
-import { syncRouter, pushVouchersToRouter } from '../services/syncService';
+import { syncRouter, pushVouchersToRouter, adoptVouchersFromRouter } from '../services/syncService';
 import { recordAudit } from '../services/auditService';
 import { actorFrom } from '../middleware/auth';
 import { toCsv } from '../utils/csv';
@@ -169,6 +169,15 @@ export async function syncRouterHandler(req: Request, res: Response): Promise<vo
 export async function pushRouterHandler(req: Request, res: Response): Promise<void> {
   const ids = (req.body as { voucherIds?: string[] }).voucherIds;
   res.json(await pushVouchersToRouter(req.params.id as string, ids));
+}
+
+/** Pulls in stock that exists on the router but not in this system. */
+export async function adoptRouterVouchers(req: Request, res: Response): Promise<void> {
+  const result = await adoptVouchersFromRouter(req.params.id as string);
+  await recordAudit(actorFrom(req), 'VOUCHER_IMPORTED', 'Router', req.params.id, {
+    source: 'router adoption', found: result.found, adopted: result.adopted,
+  });
+  res.json(result);
 }
 
 export async function routerProfiles(req: Request, res: Response): Promise<void> {

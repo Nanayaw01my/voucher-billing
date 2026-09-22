@@ -79,6 +79,10 @@ export const api = {
     test: (id: string) => request<{ ok: boolean; identity?: string; version?: string; error?: string }>(`/routers/${id}/test`, { method: 'POST' }),
     sync: (id: string) => request<{ opened: number; closed: number; updated: number }>(`/routers/${id}/sync`, { method: 'POST' }),
     push: (id: string) => request<{ pushed: number; failed: Array<{ code: string; reason: string }> }>(`/routers/${id}/push`, { method: 'POST', body: {} }),
+    adopt: (id: string) =>
+      request<{ found: number; adopted: number; alreadyKnown: number; skipped: Array<{ name: string; reason: string }> }>(
+        `/routers/${id}/adopt`, { method: 'POST' },
+      ),
     profiles: (id: string) => request<{ data: Array<{ name: string; rateLimit?: string; accountingEnabled: boolean }> }>(`/routers/${id}/profiles`),
   },
 

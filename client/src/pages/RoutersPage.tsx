@@ -40,6 +40,16 @@ export function RoutersPage() {
     routers.reload();
   });
 
+  const adopt = useSubmit(async (id: string) => {
+    const result = await api.routers.adopt(id);
+    setMessage(
+      `Found ${result.found.toLocaleString()} hotspot user(s) on the router: ` +
+        `${result.adopted.toLocaleString()} added here, ${result.alreadyKnown.toLocaleString()} already known` +
+        (result.skipped.length ? `, ${result.skipped.length} skipped (first: ${result.skipped[0]?.reason})` : '') + '.',
+    );
+    routers.reload();
+  });
+
   const push = useSubmit(async (id: string) => {
     const result = await api.routers.push(id);
     setMessage(result.failed.length
@@ -66,7 +76,7 @@ export function RoutersPage() {
         description="Credentials are encrypted at rest and never leave the backend. Add a router per location as the network grows."
         actions={<button className="btn-primary" onClick={() => { setEditing(null); setForm(BLANK); setOpen(true); }}>Add router</button>}
       />
-      <ErrorNotice message={routers.error ?? test.error ?? sync.error ?? push.error} />
+      <ErrorNotice message={routers.error ?? test.error ?? sync.error ?? push.error ?? adopt.error} />
       {message && <div className="mb-4"><Notice kind="warn">{message}</Notice></div>}
 
       <Panel>
@@ -100,6 +110,7 @@ export function RoutersPage() {
                         <button className="btn-quiet px-2 py-1 text-xs" disabled={test.busy} onClick={() => void test.run(router._id)}>Test</button>
                         <button className="btn-quiet px-2 py-1 text-xs" disabled={sync.busy} onClick={() => void sync.run(router._id)}>Sync</button>
                         <button className="btn-quiet px-2 py-1 text-xs" disabled={push.busy} onClick={() => void push.run(router._id)}>Push</button>
+                        <button className="btn-quiet px-2 py-1 text-xs" disabled={adopt.busy} onClick={() => void adopt.run(router._id)}>Pull vouchers</button>
                         <button className="btn-quiet px-2 py-1 text-xs" onClick={() => startEdit(router)}>Edit</button>
                       </div>
                     </td>

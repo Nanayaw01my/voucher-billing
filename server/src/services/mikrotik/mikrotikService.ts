@@ -4,6 +4,9 @@ import { parseRouterOsDuration, toRouterOsDuration, toNumber } from '../../utils
 export interface HotspotUser {
   id: string;
   name: string;
+  /** Present because /ip hotspot user print returns it; needed to adopt a
+   *  voucher that exists on the router but not in this system. */
+  password?: string;
   profile?: string;
   limitUptimeSeconds: number | null;
   limitBytesTotal: number | null;
@@ -64,6 +67,7 @@ function mapHotspotUser(row: Record<string, string>): HotspotUser {
   return {
     id: row['.id'] ?? '',
     name: row.name ?? '',
+    password: row.password,
     profile: row.profile,
     limitUptimeSeconds: parseRouterOsDuration(row['limit-uptime']),
     limitBytesTotal: toNumber(row['limit-bytes-total']),
@@ -122,7 +126,7 @@ export class MikrotikService {
 
   async listHotspotUsers(limit?: number): Promise<HotspotUser[]> {
     const words = ['/ip/hotspot/user/print'];
-    if (limit) words.push(`=.proplist=.id,name,profile,limit-uptime,limit-bytes-total,uptime,bytes-in,bytes-out,disabled,comment`);
+    if (limit) words.push(`=.proplist=.id,name,password,profile,limit-uptime,limit-bytes-total,uptime,bytes-in,bytes-out,disabled,comment`);
     const rows = await this.client.send(words);
     return rows.map(mapHotspotUser);
   }
