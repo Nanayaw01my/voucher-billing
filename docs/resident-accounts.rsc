@@ -114,11 +114,19 @@ set [find name="RESIDENT"] \
 # =============================================================================
 #  RUNNING IT DAY TO DAY
 #
-#  Add a resident. Pick any name and code you like -- a name is easier to
-#  remember at the till than a number, and these are people you know.
+#  Add a resident.
 #
-#    /ip hotspot user add name="kwame" password="kwame2026" profile=RESIDENT
-#    /ip hotspot user add name="ama"   password="ama4471"   profile=RESIDENT
+#  The login page shows ONE field. Whatever the customer types is sent as both
+#  the username and the password, and login.html upper-cases it on the way
+#  (code.value.trim().toUpperCase()). So a resident account must have its name
+#  and password IDENTICAL and in UPPERCASE, exactly like a voucher. The only
+#  freedom you have is choosing something memorable instead of a random number.
+#
+#    /ip hotspot user add name="KWAME2026" password="KWAME2026" profile=RESIDENT
+#    /ip hotspot user add name="AMA4471"   password="AMA4471"   profile=RESIDENT
+#
+#  name="kwame" with password="kwame2026" will always be rejected: the page
+#  has no way to send two different values.
 #
 #  See everyone and whether they are locked to a device:
 #
@@ -132,12 +140,12 @@ set [find name="RESIDENT"] \
 #  their current session is cut. Nothing is deleted, so you can switch them
 #  back on later without re-issuing anything.
 #
-#    /ip hotspot user set [find name="kwame"] disabled=yes
-#    /ip hotspot active remove [find user="kwame"]
+#    /ip hotspot user set [find name="KWAME2026"] disabled=yes
+#    /ip hotspot active remove [find user="KWAME2026"]
 #
 #  PAID AGAIN -- switch them back on:
 #
-#    /ip hotspot user set [find name="kwame"] disabled=no
+#    /ip hotspot user set [find name="KWAME2026"] disabled=no
 #
 #  THEY ARE BEING ASKED FOR THE CODE EVERY DAY
 #
@@ -155,11 +163,11 @@ set [find name="RESIDENT"] \
 #  All-zeroes is how MikroTik expresses "any device": the property will not
 #  take an empty value, and !mac-address is not accepted here.
 #
-#    /ip hotspot user set [find name="kwame"] mac-address=00:00:00:00:00:00
+#    /ip hotspot user set [find name="KWAME2026"] mac-address=00:00:00:00:00:00
 #
 #  GONE FOR GOOD -- remove the account entirely:
 #
-#    /ip hotspot user remove [find name="kwame"]
+#    /ip hotspot user remove [find name="KWAME2026"]
 #
 #
 #  A NOTE ON BILLING THEM
