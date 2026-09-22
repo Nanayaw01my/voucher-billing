@@ -62,14 +62,14 @@
 # These names must match the packages in the dashboard exactly.
 # rate-limit is upload/download as the customer experiences it. Tune to what
 # your Starlink link carries, divided by expected simultaneous users.
-/ip hotspot user profile add name=VOUCHER-1H-1CODE shared-users=1 rate-limit="2M/5M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-3H-1CODE shared-users=1 rate-limit="2M/5M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-6H-1CODE shared-users=1 rate-limit="2M/5M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-12H-1CODE shared-users=1 rate-limit="2M/5M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-24H-1CODE shared-users=1 rate-limit="2M/5M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-1GB shared-users=1 rate-limit="3M/8M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-2GB shared-users=1 rate-limit="3M/8M" status-autorefresh=1m
-/ip hotspot user profile add name=VOUCHER-5GB shared-users=1 rate-limit="4M/10M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-1H-1CODE shared-users=1 add-mac-cookie=no rate-limit="2M/5M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-3H-1CODE shared-users=1 add-mac-cookie=no rate-limit="2M/5M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-6H-1CODE shared-users=1 add-mac-cookie=no rate-limit="2M/5M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-12H-1CODE shared-users=1 add-mac-cookie=no rate-limit="2M/5M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-24H-1CODE shared-users=1 add-mac-cookie=no rate-limit="2M/5M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-1GB shared-users=1 add-mac-cookie=no rate-limit="3M/8M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-2GB shared-users=1 add-mac-cookie=no rate-limit="3M/8M" status-autorefresh=1m
+/ip hotspot user profile add name=VOUCHER-5GB shared-users=1 add-mac-cookie=no rate-limit="4M/10M" status-autorefresh=1m
 
 
 # ---- 9 -- the dashboard's API account ---------------------------------------

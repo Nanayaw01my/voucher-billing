@@ -154,17 +154,17 @@ add name=eunisetlove-hotspot interface=bridge-hotspot \
 # -----------------------------------------------------------------------------
 /ip hotspot user profile
 
-add name=VOUCHER-1H-1CODE   shared-users=1 rate-limit="2M/5M"  status-autorefresh=1m
-add name=VOUCHER-3H-1CODE   shared-users=1 rate-limit="2M/5M"  status-autorefresh=1m
-add name=VOUCHER-6H-1CODE   shared-users=1 rate-limit="2M/5M"  status-autorefresh=1m
-add name=VOUCHER-12H-1CODE  shared-users=1 rate-limit="2M/5M"  status-autorefresh=1m
-add name=VOUCHER-24H-1CODE  shared-users=1 rate-limit="2M/5M"  status-autorefresh=1m
+add name=VOUCHER-1H-1CODE   shared-users=1 add-mac-cookie=no rate-limit="2M/5M"  status-autorefresh=1m
+add name=VOUCHER-3H-1CODE   shared-users=1 add-mac-cookie=no rate-limit="2M/5M"  status-autorefresh=1m
+add name=VOUCHER-6H-1CODE   shared-users=1 add-mac-cookie=no rate-limit="2M/5M"  status-autorefresh=1m
+add name=VOUCHER-12H-1CODE  shared-users=1 add-mac-cookie=no rate-limit="2M/5M"  status-autorefresh=1m
+add name=VOUCHER-24H-1CODE  shared-users=1 add-mac-cookie=no rate-limit="2M/5M"  status-autorefresh=1m
 
 # Data-limited plans. The byte allowance lives on each voucher
 # (limit-bytes-total), not on the profile, so the dashboard can set it.
-add name=VOUCHER-1GB        shared-users=1 rate-limit="3M/8M"  status-autorefresh=1m
-add name=VOUCHER-2GB        shared-users=1 rate-limit="3M/8M"  status-autorefresh=1m
-add name=VOUCHER-5GB        shared-users=1 rate-limit="4M/10M" status-autorefresh=1m
+add name=VOUCHER-1GB        shared-users=1 add-mac-cookie=no rate-limit="3M/8M"  status-autorefresh=1m
+add name=VOUCHER-2GB        shared-users=1 add-mac-cookie=no rate-limit="3M/8M"  status-autorefresh=1m
+add name=VOUCHER-5GB        shared-users=1 add-mac-cookie=no rate-limit="4M/10M" status-autorefresh=1m
 
 
 # -----------------------------------------------------------------------------
