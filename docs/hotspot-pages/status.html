@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EUNISET LOVE — your session</title>
+<style>
+  body{margin:0;background:#fff;color:#0f172a;
+       font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+  .card{width:100%;max-width:380px}
+  h1{font-size:20px;letter-spacing:2px;color:#1b5fb0;margin:0 0 20px;text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td{padding:10px 0;border-bottom:1px solid #e3e8ef}
+  td:last-child{text-align:right;font-weight:600}
+  .out{display:block;margin-top:20px;padding:12px;border:1px solid #e3e8ef;
+       text-align:center;color:#1b5fb0;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>EUNISET LOVE</h1>
+  <table>
+    <tr><td>Voucher</td><td>$(username)</td></tr>
+    <tr><td>Connected for</td><td>$(uptime)</td></tr>
+    <tr><td>Time left</td><td>$(session-time-left)</td></tr>
+    <tr><td>Downloaded</td><td>$(bytes-in-nice)</td></tr>
+    <tr><td>Uploaded</td><td>$(bytes-out-nice)</td></tr>
+  </table>
+  <a class="out" href="$(link-logout)">Log out</a>
+</div>
+</body>
+</html>
