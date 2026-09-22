@@ -64,10 +64,18 @@ add name="voucher-first-use" dont-require-permissions=no policy=read,write,test 
   }
 }
 
-# Hand the login details to that script. Kept to one line so there is only one
-# level of quoting to get wrong.
-/ip hotspot profile
-set [find name=eunisetlove-profile] on-login=":global vfuUser \$user; :global vfuMac \$\"mac-address\"; /system script run voucher-first-use"
+# Hand the login details to that script.
+#
+# NOTE ON WHERE THIS GOES: on-login is a property of /ip hotspot USER profile
+# (the per-package profile carrying rate-limit and shared-users), NOT of
+# /ip hotspot profile (the server profile carrying login-by and
+# html-directory). Setting it on the latter fails with
+# "expected end of command".
+#
+# Applied to every VOUCHER-* user profile at once, so all eight packages get
+# it and any profile added later needs this line re-run.
+/ip hotspot user profile
+set [find name~"VOUCHER"] on-login=":global vfuUser \$user; :global vfuMac \$\"mac-address\"; /system script run voucher-first-use"
 
 
 # =============================================================================
@@ -87,8 +95,11 @@ set [find name=eunisetlove-profile] on-login=":global vfuUser \$user; :global vf
 #    /ip hotspot user set [find name="THEIRCODE"] mac-address="" disabled=no
 #    /system scheduler remove [find name="expire-THEIRCODE"]
 #
+#  Confirm it was applied to all eight profiles:
+#    /ip hotspot user profile print detail where on-login!=""
+#
 #  Turn the whole thing off:
-#    /ip hotspot profile set [find name=eunisetlove-profile] on-login=""
+#    /ip hotspot user profile set [find name~"VOUCHER"] on-login=""
 #  Then clear what it left behind, if you want to:
 #    /system scheduler remove [find comment="EUNISET LOVE voucher expiry"]
 #    /ip hotspot user set [find where mac-address!=""] mac-address=""

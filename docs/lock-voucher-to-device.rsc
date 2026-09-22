@@ -18,11 +18,12 @@
 #  Install:  upload this file, then  /import file-name=lock-voucher-to-device.rsc
 # =============================================================================
 
-/ip hotspot profile
-set [find name=eunisetlove-profile] on-login=":local u \$user; :local m \$\"mac-address\"; :local bound [/ip hotspot user get [find name=\$u] mac-address]; :if (\$bound = \"\") do={ /ip hotspot user set [find name=\$u] mac-address=\$m; :log info (\"voucher \" . \$u . \" locked to device \" . \$m); } "
+# on-login belongs on the USER profile, not the server profile.
+/ip hotspot user profile
+set [find name~"VOUCHER"] on-login=":local u \$user; :local m \$\"mac-address\"; :local bound [/ip hotspot user get [find name=\$u] mac-address]; :if (\$bound = \"\") do={ /ip hotspot user set [find name=\$u] mac-address=\$m; :log info (\"voucher \" . \$u . \" locked to device \" . \$m); } "
 
 # --- check it took --------------------------------------------------------
-# /ip hotspot profile print detail where name="eunisetlove-profile"
+# /ip hotspot user profile print detail where on-login!=""
 #
 # --- watch it working ----------------------------------------------------
 # After a customer logs in for the first time:
@@ -35,7 +36,7 @@ set [find name=eunisetlove-profile] on-login=":local u \$user; :local m \$\"mac-
 #   /ip hotspot user set [find name="THEIRCODE"] mac-address=""
 #
 # --- turn the whole thing off --------------------------------------------
-#   /ip hotspot profile set [find name=eunisetlove-profile] on-login=""
+#   /ip hotspot user profile set [find name~"VOUCHER"] on-login=""
 # Existing locks stay until cleared individually, or all at once with:
 #   /ip hotspot user set [find where mac-address!=""] mac-address=""
 
