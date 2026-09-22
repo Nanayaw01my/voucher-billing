@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MikroTik fresh build</title>
+<style>
+  @page { size: A4; margin: 15mm 14mm; }
+  body { font: 10.5pt/1.45 "Helvetica Neue", Helvetica, Arial, sans-serif; color:#000; margin:0; }
+  h1 { font-size: 19pt; margin: 0 0 2mm; }
+  .sub { font-size: 9pt; color:#444; margin: 0 0 4mm; }
+  h2 { font-size: 12pt; margin: 6mm 0 2mm; padding-bottom: 1.5mm; border-bottom: 1.5pt solid #000;
+       page-break-after: avoid; }
+  h2 .tag { font-size: 8.5pt; font-weight: 400; color:#444; }
+  p { margin: 0 0 2.5mm; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  pre { background:#f2f2f2; border-left:2.5pt solid #000; padding:2.5mm 3mm; font-size:9.5pt;
+        margin:2mm 0 3mm; white-space:pre-wrap; page-break-inside:avoid; }
+  .fill { margin:2mm 0 3mm; font-size:9.5pt; }
+  .fill div { border-bottom:.8pt solid #888; padding:1.2mm 0 .8mm; margin-bottom:2mm; }
+  .fill span { color:#444; }
+  table { width:100%; border-collapse:collapse; margin:2mm 0 3mm; font-size:9.5pt;
+          page-break-inside:avoid; }
+  th,td { border:.8pt solid #999; padding:1.6mm 2mm; text-align:left; vertical-align:top; }
+  th { background:#eee; }
+  .callout { border:1.5pt solid #000; padding:2.5mm 3mm; margin:3mm 0; font-size:9.5pt;
+             page-break-inside:avoid; }
+  .box { display:inline-block; width:3.6mm; height:3.6mm; border:1pt solid #000;
+         margin-right:2mm; vertical-align:-0.4mm; }
+  ul.check { list-style:none; padding:0; margin:2mm 0; font-size:10pt; }
+  ul.check li { margin-bottom:2.4mm; }
+  .note { font-size:9pt; color:#444; }
+  footer { margin-top:5mm; padding-top:2mm; border-top:.8pt solid #999; font-size:8.5pt; color:#444; }
+</style></head><body>
+
+<h1>MikroTik fresh build</h1>
+<p class="sub">EUNISET LOVE &middot; nothing on the router worth keeping &middot; reset and build from scratch</p>
+
+<div class="callout">
+  <strong>Take with you:</strong> a laptop with Winbox, the file
+  <code>mikrotik-setup.rsc</code> on it (or on a USB stick), an ethernet cable,
+  and a phone to test the hotspot with.
+  <br><br>
+  <strong>Decide two passwords before you start</strong> and write them in Step 2.
+  You will be asked for them mid-way and they are not recoverable afterwards.
+</div>
+
+<h2>Step 1 <span class="tag">— the public IP test, BEFORE you reset</span></h2>
+<p>Do this first. It is the one thing a reset would make you redo, and it decides
+whether the online dashboard can ever reach this router.</p>
+<pre>/ip address print
+/ip cloud set ddns-enabled=yes
+/ip cloud print</pre>
+<div class="fill">
+  <div><span>WAN address (from /ip address print)</span></div>
+  <div><span>public-address (from /ip cloud print)</span></div>
+</div>
+<table>
+  <tr><th style="width:42%">What you see</th><th>What it means</th></tr>
+  <tr><td>The two <strong>match</strong></td><td>Public IP. The online dashboard can reach the router.</td></tr>
+  <tr><td>They <strong>differ</strong></td><td>CGNAT. Dashboard cannot dial in; run it on site or via a tunnel.</td></tr>
+  <tr><td>WAN starts <code>100.64.</code>–<code>100.127.</code></td><td>CGNAT confirmed.</td></tr>
+</table>
+<p class="note">Write both down. Don't try to decide what it means on site.</p>
+
+<h2>Step 2 <span class="tag">— choose your passwords now</span></h2>
+<div class="fill">
+  <div><span>Router admin password</span></div>
+  <div><span>API password (for the dashboard)</span></div>
+</div>
+<p class="note">Edit these into <code>mikrotik-setup.rsc</code> before running it —
+search the file for <strong>CHANGE-ME</strong>. There are four.</p>
+
+<h2>Step 3 <span class="tag">— reset</span></h2>
+<pre>/system reset-configuration no-defaults=yes skip-backup=yes</pre>
+<div class="callout">
+  The router reboots with <strong>no IP address at all</strong>. Reconnect with Winbox using the
+  <strong>MAC address</strong> on the <strong>Neighbors</strong> tab — not an IP, there isn't one yet.
+  Plug your laptop into <strong>ether2</strong>, not ether1.
+</div>
+
+<h2>Step 4 <span class="tag">— load the configuration</span></h2>
+<p>Winbox &rarr; <strong>Files</strong> &rarr; drag <code>mikrotik-setup.rsc</code> in. Then:</p>
+<pre>/import file-name=mikrotik-setup.rsc</pre>
+<p class="note">Watch the output. If a line fails, write down which one and carry on —
+most failures are a port name that differs on your model (<code>ether5</code> on a 4-port router,
+for example). Check yours with <code>/interface print</code>.</p>
+
+<h2>Step 5 <span class="tag">— check it came up</span></h2>
+<pre>/ip address print
+/ip hotspot print
+/ip hotspot user profile print
+/ip service print</pre>
+<p>You want: an address on <code>ether1</code> from Starlink, <code>10.5.50.1</code> on the bridge,
+one hotspot server running, <strong>eight</strong> voucher profiles, and <code>api</code> enabled on 8728.</p>
+<div class="fill"><div><span>Anything that looks wrong</span></div><div><span>&nbsp;</span></div></div>
+
+<h2>Step 6 <span class="tag">— test with a phone</span></h2>
+<p>Connect to the access point's WiFi. A login page should appear. Sign in with:</p>
+<pre>username: TEST1234
+password: TEST1234</pre>
+<p>Confirm you get real internet, then check the session is being counted:</p>
+<pre>/ip hotspot active print</pre>
+<p>You should see the phone listed with bytes climbing. Then remove the test voucher:</p>
+<pre>/ip hotspot user remove [find name=TEST1234]</pre>
+<div class="callout">
+  If the login page never appears, the usual causes are: the access point is not plugged into
+  <strong>ether2–ether5</strong>, or the AP is running its own DHCP server and should be in
+  bridge/access-point mode instead.
+</div>
+
+<h2>Bring back</h2>
+<ul class="check">
+  <li><span class="box"></span>Step 1: both addresses</li>
+  <li><span class="box"></span>The two passwords you set</li>
+  <li><span class="box"></span>The router's LAN IP (should be <code>10.5.50.1</code>)</li>
+  <li><span class="box"></span>Router model and RouterOS version (<code>/system resource print</code>)</li>
+  <li><span class="box"></span>Whether the phone test worked, and what the login page looked like</li>
+  <li><span class="box"></span>Any command that failed, and its exact message</li>
+</ul>
+
+<h2>If you get locked out</h2>
+<p>You cannot be permanently locked out of a MikroTik you are physically next to.</p>
+<table>
+  <tr><th style="width:38%">Situation</th><th>What to do</th></tr>
+  <tr><td>No IP, cannot connect</td><td>Winbox &rarr; Neighbors tab &rarr; connect by MAC address.</td></tr>
+  <tr><td>Forgot the password you just set</td><td>Reset again and start from Step 3. Nothing is lost.</td></tr>
+  <tr><td>Configuration is a mess</td><td>Reset again. The script is repeatable — run it as many times as you need.</td></tr>
+</table>
+
+<footer>EUNISET LOVE — MikroTik fresh build. Nothing here risks data: the router has nothing worth keeping.</footer>
+</body></html>
