@@ -54,7 +54,7 @@
 
 
 # ---- 7 -- hotspot server ----------------------------------------------------
-/ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 dns-name="login.eunisetlove.local" html-directory=hotspot login-by=http-chap,http-pap use-radius=no
+/ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 html-directory=hotspot login-by=http-pap use-radius=no
 /ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=5m keepalive-timeout=none disabled=no
 
 
@@ -98,7 +98,6 @@
 
 
 # ---- 11 -- walled garden and a test voucher ---------------------------------
-/ip hotspot walled-garden add dst-host=login.eunisetlove.local
 /ip hotspot user add name=TEST1234 password=TEST1234 profile=VOUCHER-1H-1CODE limit-uptime=1h
 
 

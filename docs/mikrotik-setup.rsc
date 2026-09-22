@@ -121,8 +121,8 @@ add chain=srcnat out-interface=ether1 action=masquerade comment="hotspot to Star
 # -----------------------------------------------------------------------------
 /ip hotspot profile
 add name=eunisetlove-profile hotspot-address=10.5.50.1 \
-    dns-name="login.eunisetlove.local" \
-    html-directory=hotspot login-by=http-chap,http-pap \
+    \
+    html-directory=hotspot login-by=http-pap \
     use-radius=no \
     comment="CHANGE-ME if you want a different login page address"
 
@@ -226,14 +226,6 @@ add chain=forward action=drop connection-state=invalid
 add chain=forward action=drop connection-state=new in-interface=ether1 \
     comment="no inbound sessions from the internet"
 
-
-# -----------------------------------------------------------------------------
-# 11. Walled garden — what an unauthenticated customer may reach
-#
-#     Keep this short. Everything listed here is free internet access.
-# -----------------------------------------------------------------------------
-/ip hotspot walled-garden
-add dst-host=login.eunisetlove.local comment="the login page itself"
 
 
 # -----------------------------------------------------------------------------

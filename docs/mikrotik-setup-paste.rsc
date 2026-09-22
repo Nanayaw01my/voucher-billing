@@ -33,7 +33,7 @@
 /ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade
 
 # 7 — hotspot server
-/ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 dns-name="login.eunisetlove.local" html-directory=hotspot login-by=http-chap,http-pap use-radius=no
+/ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 html-directory=hotspot login-by=http-pap use-radius=no
 /ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=5m keepalive-timeout=none disabled=no
 
 # 8 — the eight voucher profiles. These names must match the dashboard packages.
@@ -70,8 +70,7 @@
 /ip firewall filter add chain=forward action=drop connection-state=invalid
 /ip firewall filter add chain=forward action=drop connection-state=new in-interface=ether1
 
-# 11 — walled garden and one test voucher
-/ip hotspot walled-garden add dst-host=login.eunisetlove.local
+# 11 — test voucher
 /ip hotspot user add name=TEST1234 password=TEST1234 profile=VOUCHER-1H-1CODE limit-uptime=1h
 
 # 12 — verify, then delete the test voucher
