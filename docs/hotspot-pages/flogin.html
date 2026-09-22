@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EUNISET LOVE</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:#0f172a;
+       font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+  .card{width:100%;max-width:380px}
+  h1{margin:0 0 4px;text-align:center;font-size:22px;letter-spacing:2px;color:#1b5fb0}
+  .tag{margin:0 0 24px;text-align:center;font-size:12px;color:#5b6472}
+  form{border:1px solid #e3e8ef;padding:20px}
+  label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;
+        letter-spacing:.5px;color:#5b6472;margin-bottom:6px}
+  input[type=text]{width:100%;padding:14px;border:1px solid #e3e8ef;font-size:20px;
+                   text-align:center;letter-spacing:3px;text-transform:uppercase;
+                   font-family:ui-monospace,Menlo,Consolas,monospace}
+  input[type=text]:focus{outline:none;border-color:#1b5fb0}
+  button{width:100%;margin-top:16px;padding:14px;border:1px solid #1b5fb0;background:#1b5fb0;
+         color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+  button:active{background:#14477f}
+  .err{border:1px solid #fcd9d4;background:#fef3f2;color:#b42318;
+       padding:10px 12px;font-size:14px;margin-bottom:16px;font-weight:600}
+  ol{margin:20px 0 0;padding-left:20px;font-size:12px;color:#5b6472;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <h1>EUNISET LOVE</h1>
+  <p class="tag">Enter your voucher code to get online</p>
+
+  $(if error)<div class="err">$(error)</div>$(endif)
+
+  <form name="login" action="$(link-login-only)" method="post"
+        onsubmit="return copyCode()">
+    <input type="hidden" name="dst" value="$(link-orig)">
+    <input type="hidden" name="popup" value="true">
+    <!-- The voucher code is both the username and the password, so the
+         customer types it once and the page fills both fields. -->
+    <input type="hidden" name="password" id="password" value="">
+
+    <label for="code">Voucher code</label>
+    <input type="text" name="username" id="code" autocomplete="off"
+           autocapitalize="characters" autocorrect="off" spellcheck="false"
+           placeholder="ABCD1234" required autofocus>
+
+    <button type="submit">Connect</button>
+  </form>
+
+  <ol>
+    <li>Type the code printed on your voucher card</li>
+    <li>Tap Connect</li>
+    <li>If it fails, check for 0 and O, or 1 and I</li>
+  </ol>
+
+</div>
+
+<script>
+function copyCode() {
+  var code = document.getElementById('code');
+  code.value = code.value.trim().toUpperCase();
+  // Vouchers use the same value for username and password.
+  document.getElementById('password').value = code.value;
+  return code.value.length > 0;
+}
+</script>
+</body>
+</html>
