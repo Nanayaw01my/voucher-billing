@@ -34,7 +34,7 @@
 
 # 7 — hotspot server
 /ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 html-directory=hotspot login-by=http-pap use-radius=no
-/ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=5m keepalive-timeout=none disabled=no
+/ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=none keepalive-timeout=2m disabled=no
 
 # 8 — the eight voucher profiles. These names must match the dashboard packages.
 #     rate-limit is upload/download as the customer experiences it.

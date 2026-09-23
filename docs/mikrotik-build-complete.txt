@@ -55,7 +55,19 @@
 
 # ---- 7 -- hotspot server ----------------------------------------------------
 /ip hotspot profile add name=eunisetlove-profile hotspot-address=10.5.50.1 html-directory=hotspot login-by=http-pap use-radius=no
-/ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=5m keepalive-timeout=none disabled=no
+# idle-timeout=none, not the RouterOS default of 5m. A customer who buys 24
+# hours and puts their phone in their pocket for ten minutes was being cut off
+# and asked for their code again -- and because the voucher profiles set
+# add-mac-cookie=no, "again" means typing it. The voucher still worked, but it
+# reads as a broken voucher to the customer and it is the seller who hears it.
+#
+# keepalive-timeout=2m does the job idle-timeout was wrongly doing. The router
+# pings the device: quiet but present keeps the session, genuinely gone ends
+# it. Without it, both timeouts off means a session never ends until the
+# voucher expires -- which for a RESIDENT account is never, so ghost sessions
+# would pile up against shared-users=2 and lock a resident out of their own
+# account.
+/ip hotspot add name=eunisetlove-hotspot interface=bridge-hotspot address-pool=hotspot-pool profile=eunisetlove-profile addresses-per-mac=1 idle-timeout=none keepalive-timeout=2m disabled=no
 
 
 # ---- 8 -- the eight voucher profiles ----------------------------------------

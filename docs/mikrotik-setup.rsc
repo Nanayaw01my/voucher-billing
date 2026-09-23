@@ -129,7 +129,7 @@ add name=eunisetlove-profile hotspot-address=10.5.50.1 \
 /ip hotspot
 add name=eunisetlove-hotspot interface=bridge-hotspot \
     address-pool=hotspot-pool profile=eunisetlove-profile \
-    addresses-per-mac=1 idle-timeout=5m keepalive-timeout=none disabled=no
+    addresses-per-mac=1 idle-timeout=none keepalive-timeout=2m disabled=no
 
 
 # -----------------------------------------------------------------------------
